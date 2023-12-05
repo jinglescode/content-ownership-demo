@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@meshsdk/core": "1.5.6",
+    "@meshsdk/core": "1.5.10",
     "@meshsdk/react": "^1.1.7",
     "next": "latest",
     "react": "latest",
