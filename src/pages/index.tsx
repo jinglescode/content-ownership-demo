@@ -1,5 +1,6 @@
 import { InfuraProvider, MaestroProvider, MeshTxBuilder, Data } from "@meshsdk/core";
-import { blueprint, applyParamsToScript, getV2ScriptHash } from "../aiken";
+import { blueprint, applyParamsToScript } from "../aiken";
+import { ScriptsSetup } from "@/transactions";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -39,8 +40,29 @@ export default function Home() {
 
   const queryUtxos = async () => {
     const utxos = await maestro.fetchAddressUTxOs(walletAddress);
-    console.log("UTXOS", utxos);
+    // console.log(utxos);
+    console.log(
+      "UTXOS",
+      utxos.map((u) => {
+        return {
+          txHash: u.input.txHash,
+          txId: u.input.outputIndex,
+          amount: u.output.amount,
+        };
+      })
+    );
+    // const correctUtxo = await getUtxosWithMinLovelace(100000000);
+    // console.log("Correct UTXO", correctUtxo);
+
     return utxos;
+  };
+
+  const getUtxosWithMinLovelace = async (lovelace: number) => {
+    const utxos = await maestro.fetchAddressUTxOs(walletAddress);
+    return utxos.filter((u) => {
+      const lovelaceAmount = u.output.amount.find((a: any) => a.unit === "lovelace")?.quantity;
+      return Number(lovelaceAmount) > lovelace;
+    });
   };
 
   const mesh = new MeshTxBuilder({
@@ -49,50 +71,39 @@ export default function Home() {
     evaluator: maestro,
   });
 
-  const mintOneTimeMintingPolicy = async () => {
-    const paramScript = applyParam();
-    const policyId = getV2ScriptHash(paramScript);
-    const tokenName = "";
-    console.log("Policy ID", policyId);
-
-    await mesh
-      .txIn("3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814", 6)
-      .txOut(walletAddress, [
-        { unit: "lovelace", quantity: "5000000" },
-        { unit: policyId + tokenName, quantity: "1" },
-      ])
-      .mintPlutusScriptV2()
-      .mint(1, policyId, tokenName)
-      .mintingScript(paramScript)
-      .mintRedeemerValue({ alternative: 0, fields: [] })
-      .txInCollateral("3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814", 7)
-      .changeAddress(walletAddress)
-      .signingKey(skey)
-      .complete();
-
-    const signedTx = mesh.completeSigning();
-    const txHash = await mesh.submitTx(signedTx);
-    console.log("TX HASH", txHash);
-  };
-
-  const applyParam = () => {
-    const script = blueprint.validators[2].compiledCode;
-    const param: Data = {
-      alternative: 0,
-      fields: [{ alternative: 0, fields: ["3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814"] }, 6],
-    };
-    const paramScript = applyParamsToScript(script, [param]);
-    console.log("Param scripts", paramScript);
-    return paramScript;
-  };
-
+  const setup = new ScriptsSetup(mesh, {
+    walletAddress,
+    skey,
+    collateralUTxO: {
+      txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
+      outputIndex: 7,
+    },
+  });
   // console.log("Param scripts", paramScript);
+
+  const sendRefScriptOnchain = async () => {
+    const utxo = await getUtxosWithMinLovelace(100000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const script = await setup.sendRefScriptOnchain(txHash, txId, "OracleValidator");
+    console.log("Script", script);
+  };
+
+  const sendOracleNFTtoScript = async () => {
+    const txHash = await setup.setupOracleUtxo("640facd8ef37526f46302c21ffb8cf5f7456bb53f4fca406ef5b5d50ab7d2caf", 0);
+  };
 
   return (
     <main>
-      <button onClick={() => applyParam()}>Apply</button>
-      <button onClick={() => mintOneTimeMintingPolicy()}>mint</button>
-      <button onClick={() => queryUtxos()}>Query</button>
+      <button className="m-2 p-2 bg-slate-300" onClick={() => sendRefScriptOnchain()}>
+        Send OracleVad Ref Script
+      </button>
+      <button className="m-2 p-2 bg-slate-300" onClick={() => sendOracleNFTtoScript()}>
+        Send Oracle NFT
+      </button>
+      <button className="m-2 p-2 bg-slate-300" onClick={() => queryUtxos()}>
+        Query
+      </button>
     </main>
   );
 }

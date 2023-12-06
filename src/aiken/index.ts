@@ -1,6 +1,7 @@
 import { Data } from "@meshsdk/core";
 import aikenScripts from "./blueprint.json";
 import { C } from "./libs";
+import { bytesToHex, hexToBytes } from "@sidan-lab/sidan-csl";
 
 const toBytes = (hex: string): Uint8Array => {
   if (hex.length % 2 === 0 && /^[0-9A-F]*$/i.test(hex)) return Buffer.from(hex, "hex");
@@ -41,34 +42,46 @@ const toPlutusData = (data: Data) => {
   }
 };
 
-export const toHex = (bytes: Uint8Array) => Buffer.from(bytes).toString("hex");
-export const fromHex = (hex: string) => Buffer.from(hex, "hex");
-
 export function applyDoubleCborEncoding(script: string): string {
   try {
-    C.PlutusScript.from_bytes(C.PlutusScript.from_bytes(fromHex(script)).bytes());
+    C.PlutusScript.from_bytes(C.PlutusScript.from_bytes(hexToBytes(script)).bytes());
     return script;
   } catch (_e) {
-    return toHex(C.PlutusScript.new(fromHex(script)).to_bytes());
+    return bytesToHex(C.PlutusScript.new(hexToBytes(script)).to_bytes());
   }
 }
 
-export function applyParamsToScript(plutusScript: string, params: Data[]): string {
+export type ParamsToApply =
+  | {
+      type: "Mesh";
+      params: Data[];
+    }
+  | {
+      type: "Raw";
+      params: object[];
+    };
+
+export function applyParamsToScript(plutusScript: string, paramsToApply: ParamsToApply): string {
   const plutusList = C.PlutusList.new();
-  params.forEach((param) => {
-    const plutusData = toPlutusData(param);
-    plutusList.add(plutusData);
-  });
-  return toHex(
+  const type = paramsToApply.type;
+  if (type === "Mesh") {
+    paramsToApply.params.forEach((param) => {
+      const plutusData = toPlutusData(param);
+      plutusList.add(plutusData);
+    });
+  }
+  if (type === "Raw") {
+    paramsToApply.params.forEach((param) => {
+      const plutusData = C.PlutusData.from_json(JSON.stringify(param), C.PlutusDatumSchema.DetailedSchema);
+      plutusList.add(plutusData);
+    });
+  }
+  return bytesToHex(
     C.apply_params_to_plutus_script(
       plutusList,
-      C.PlutusScript.from_bytes(fromHex(applyDoubleCborEncoding(plutusScript)))
+      C.PlutusScript.from_bytes(hexToBytes(applyDoubleCborEncoding(plutusScript)))
     ).to_bytes()
   );
-}
-
-export function getV2ScriptHash(script: string): string {
-  return C.PlutusScript.from_hex_with_version(script, C.Language.new_plutus_v2()).hash().to_hex();
 }
 
 export const blueprint = aikenScripts;
