@@ -1,6 +1,8 @@
-import { InfuraProvider, MaestroProvider, MeshTxBuilder, Data } from "@meshsdk/core";
+import { InfuraProvider, MaestroProvider, MeshTxBuilder, Data, IFetcher } from "@meshsdk/core";
 import { blueprint, applyParamsToScript } from "../aiken";
-import { ScriptsSetup } from "@/transactions";
+import { AdminAction, ScriptsSetup } from "@/transactions";
+import { useWallet } from "@meshsdk/react";
+import { TxConstants, oraclePolicyId } from "@/transactions/common";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -13,6 +15,7 @@ const walletAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
 const skey = process.env.NEXT_PUBLIC_SKEY!;
 
 export default function Home() {
+  const { connect, connected, wallet } = useWallet();
   async function uploadMarkdown() {
     const content = "---\ntitle: Hello World\n---\n\n# Hello World\n\nThis is my first post!";
 
@@ -39,22 +42,27 @@ export default function Home() {
   }
 
   const queryUtxos = async () => {
-    const utxos = await maestro.fetchAddressUTxOs(walletAddress);
-    // console.log(utxos);
-    console.log(
-      "UTXOS",
-      utxos.map((u) => {
-        return {
-          txHash: u.input.txHash,
-          txId: u.input.outputIndex,
-          amount: u.output.amount,
-        };
-      })
+    // const utxos = await maestro.fetchAddressUTxOs(walletAddress);
+    // // console.log(utxos);
+    // console.log(
+    //   "UTXOS",
+    //   utxos.map((u) => {
+    //     return {
+    //       txHash: u.input.txHash,
+    //       txId: u.input.outputIndex,
+    //       amount: u.output.amount,
+    //     };
+    //   })
+    // );
+
+    const oracleUtxo = await maestro.fetchAddressUTxOs(
+      "addr_test1wr3rrjfrwrakpz6rmn7uw4rk80hmzasgh7v9ehz5z8yp0cscavawv"
     );
+    console.log("Oracle UTXO", oracleUtxo);
     // const correctUtxo = await getUtxosWithMinLovelace(100000000);
     // console.log("Correct UTXO", correctUtxo);
 
-    return utxos;
+    // return utxos;
   };
 
   const getUtxosWithMinLovelace = async (lovelace: number) => {
@@ -65,62 +73,133 @@ export default function Home() {
     });
   };
 
+  const getUtxosWithToken = async (assetHex: string) => {
+    const utxos = await maestro.fetchAddressUTxOs(walletAddress);
+    return utxos.filter((u) => {
+      const assetAmount = u.output.amount.find((a: any) => a.unit === assetHex)?.quantity;
+      return Number(assetAmount) >= 1;
+    });
+  };
+
   const mesh = new MeshTxBuilder({
     fetcher: maestro,
     submitter: maestro,
     evaluator: maestro,
   });
 
-  const setup = new ScriptsSetup(mesh, {
-    walletAddress,
-    skey,
-    collateralUTxO: {
-      txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
-      outputIndex: 7,
+  const txParams: [MeshTxBuilder, IFetcher, TxConstants] = [
+    mesh,
+    maestro,
+    {
+      walletAddress,
+      skey,
+      collateralUTxO: {
+        txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
+        outputIndex: 7,
+      },
     },
-  });
+  ];
+
+  const setup = new ScriptsSetup(...txParams);
+  const admin = new AdminAction(...txParams);
   // console.log("Param scripts", paramScript);
 
+  const mintOneTimeMintingPolicy = async () => {
+    const utxo = await getUtxosWithMinLovelace(100000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const confirmTxHash = await setup.mintOneTimeMintingPolicy(txHash, txId);
+    console.log("TxHash", confirmTxHash);
+  };
   const sendRefScriptOnchain = async () => {
     const utxo = await getUtxosWithMinLovelace(100000000);
     const txHash = utxo[0].input.txHash;
     const txId = utxo[0].input.outputIndex;
-    const script = await setup.sendRefScriptOnchain(txHash, txId, "OracleValidator");
-    console.log("Script", script);
+    const confirmTxHash = await setup.sendRefScriptOnchain(txHash, txId, "OwnershipRefToken");
+    console.log("TxHash", confirmTxHash);
   };
 
   const sendOracleNFTtoScript = async () => {
-    const txHash = await setup.setupOracleUtxo("640facd8ef37526f46302c21ffb8cf5f7456bb53f4fca406ef5b5d50ab7d2caf", 0);
+    const utxo = await getUtxosWithMinLovelace(100000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const nftUtxo = await getUtxosWithToken(oraclePolicyId);
+    const nftTxHash = nftUtxo[0].input.txHash;
+    const nftTxId = nftUtxo[0].input.outputIndex;
+    const confirmTxHash = await setup.setupOracleUtxo(txHash, txId, nftTxHash, nftTxId);
+    console.log("TxHash", confirmTxHash);
+  };
+
+  const createContentRegistry = async () => {
+    const utxo = await getUtxosWithMinLovelace(10000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const confirmTxHash = await setup.createContentRegistry(txHash, txId, 0, 0);
+    console.log("TxHash", confirmTxHash);
+  };
+
+  const createOwnershipRegistry = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const confirmTxHash = await setup.createOwnershipRegistry(txHash, txId, 0, 0);
+    console.log("TxHash", confirmTxHash);
+  };
+
+  const stopContentRegistry = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const txBody = await admin.stopContentRegistry(txHash, txId, 1);
+    const signedTx = await wallet.signTx(txBody, true);
+    const confirmTxHash = await maestro.submitTx(signedTx);
+    console.log("TxHash", confirmTxHash);
+  };
+
+  const stopOracle = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const txBody = await admin.stopOracle(txHash, txId);
+    const signedTx = await wallet.signTx(txBody, true);
+    const confirmTxHash = await maestro.submitTx(signedTx);
+    console.log("TxHash", confirmTxHash);
   };
 
   return (
     <main>
-      <button className="m-2 p-2 bg-slate-300" onClick={() => sendRefScriptOnchain()}>
-        Send OracleVad Ref Script
+      <span className="text-black">Connected: {connected ? "Yes" : "No"}</span>
+      <button
+        className="m-2 p-2 bg-slate-500"
+        onClick={() => {
+          connect("eternl");
+        }}>
+        Connect Eternl
       </button>
-      <button className="m-2 p-2 bg-slate-300" onClick={() => sendOracleNFTtoScript()}>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => sendRefScriptOnchain()}>
+        Send Ref Script
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => mintOneTimeMintingPolicy()}>
+        Mint Oracle NFT
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => sendOracleNFTtoScript()}>
         Send Oracle NFT
       </button>
-      <button className="m-2 p-2 bg-slate-300" onClick={() => queryUtxos()}>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => createContentRegistry()}>
+        Create Content Registry
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => createOwnershipRegistry()}>
+        Create Ownership Registry
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => stopContentRegistry()}>
+        Stop Content Registry
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => stopOracle()}>
+        Stop Oracle
+      </button>
+      <button className="m-2 p-2 bg-slate-500" onClick={() => queryUtxos()}>
         Query
       </button>
     </main>
   );
 }
-
-// {
-//   "address": "addr_test1vpw22xesfv0hnkfw4k5vtrz386tfgkxu6f7wfadug7prl7s6gt89x",
-//   "tx_hash": "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
-//   "tx_index": 6,
-//   "output_index": 6,
-//   "amount": [
-//     {
-//       "unit": "lovelace",
-//       "quantity": "10000000"
-//     }
-//   ],
-//   "block": "54f8ac30aab85d027b283fd124f969e0f5a0534343235e89e6d946862efe967d",
-//   "data_hash": null,
-//   "inline_datum": null,
-//   "reference_script_hash": null
-// },

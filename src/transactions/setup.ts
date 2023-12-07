@@ -1,96 +1,38 @@
-import { Data, MeshTxBuilder, UTxO } from "@meshsdk/core";
+import { Data, IFetcher, MeshTxBuilder } from "@meshsdk/core";
 import { applyParamsToScript, blueprint } from "../aiken";
 import {
-  PubKeyAddress,
-  addrBech32ToObj,
-  builtinByteString,
-  conStr0,
   getV2ScriptHash,
-  integer,
   mConStr0,
+  mConStr1,
   mScriptAddress,
-  pubKeyHash,
-  scriptAddress,
   serializeBech32Address,
-  txOutRef,
+  stringToHex,
   v2ScriptHashToBech32,
 } from "@sidan-lab/sidan-csl";
+import {
+  TxConstants,
+  ScriptIndex,
+  getScriptCbor,
+  refScriptsAddress,
+  oraclePolicyId,
+  getScriptHash,
+  oracleValidatorRefTxHash,
+  oracleValidatorRefTxId,
+  contentTokenRefTxHash,
+  contentTokenRefTxId,
+  ownershipTokenRefTxHash,
+  ownershipTokenRefTxId,
+  operationAddress,
+  makeMeshTxBuilderBody,
+  MeshTxInitiator,
+  oracleAddress,
+  contentAddress,
+  contentPolicyId,
+} from "./common";
 
-const refScriptsAddress = process.env.NEXT_PUBLIC_REF_SCRIPTS_ADDR!;
-const [oracleValidatorRefTxHash, oracleValidatorRefTxId] =
-  process.env.NEXT_PUBLIC_ORACLE_VALIDATOR_REF_UTXO!.split("#");
-const operationAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
-const oraclePolicyId = process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!;
-
-export type InputUTxO = UTxO["input"];
-
-export type ScriptIndex =
-  | "OracleNFT"
-  | "OracleValidator"
-  | "ContentRegistry"
-  | "ContentRefToken"
-  | "OwnershipRegistry"
-  | "OwnershipRefToken";
-
-export const getScriptCbor = (scriptIndex: ScriptIndex) => {
-  const validators = blueprint.validators;
-  const oracleNFTToParam = builtinByteString(oraclePolicyId);
-  switch (scriptIndex) {
-    case "OracleNFT":
-      return applyParamsToScript(validators[2].compiledCode, {
-        type: "Raw",
-        params: [txOutRef("3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814", 6)],
-      });
-    case "OracleValidator":
-      return applyParamsToScript(validators[3].compiledCode, { type: "Raw", params: [] });
-    case "ContentRegistry":
-      return applyParamsToScript(validators[0].compiledCode, {
-        type: "Raw",
-        params: [oracleNFTToParam],
-      });
-    case "ContentRefToken":
-      return applyParamsToScript(validators[1].compiledCode, { type: "Raw", params: [oracleNFTToParam] });
-    case "OwnershipRegistry":
-      return applyParamsToScript(validators[4].compiledCode, { type: "Raw", params: [oracleNFTToParam] });
-    case "OwnershipRefToken":
-      return applyParamsToScript(validators[5].compiledCode, { type: "Raw", params: [oracleNFTToParam] });
-  }
-};
-
-export const getScriptHash = (scriptIndex: ScriptIndex) => {
-  const scriptCbor = getScriptCbor(scriptIndex);
-  return getV2ScriptHash(scriptCbor);
-};
-
-export type SetupConstants = {
-  collateralUTxO: InputUTxO;
-  walletAddress: string;
-  skey: string;
-};
-
-const makeMeshTxBuilderBody = () => {
-  return {
-    inputs: [],
-    outputs: [],
-    collaterals: [],
-    requiredSignatures: [],
-    referenceInputs: [],
-    mints: [],
-    changeAddress: "",
-    metadata: [],
-    validityRange: {},
-    signingKey: [],
-  };
-};
-
-export class ScriptsSetup {
-  mesh: MeshTxBuilder;
-
-  setupConstants: SetupConstants;
-
-  constructor(mesh: MeshTxBuilder, setupConstants: SetupConstants) {
-    this.mesh = mesh;
-    this.setupConstants = setupConstants;
+export class ScriptsSetup extends MeshTxInitiator {
+  constructor(mesh: MeshTxBuilder, fetcher: IFetcher, setupConstants: TxConstants) {
+    super(mesh, fetcher, setupConstants);
   }
 
   signSubmitReset = async () => {
@@ -112,7 +54,7 @@ export class ScriptsSetup {
 
     await this.mesh
       .txIn(paramTxHash, paramTxId)
-      .txOut(this.setupConstants.walletAddress, [
+      .txOut(this.constants.walletAddress, [
         { unit: "lovelace", quantity: "2000000" },
         { unit: policyId + tokenName, quantity: "1" },
       ])
@@ -120,9 +62,9 @@ export class ScriptsSetup {
       .mint(1, policyId, tokenName)
       .mintingScript(paramScript)
       .mintRedeemerValue({ alternative: 0, fields: [] })
-      .txInCollateral(this.setupConstants.collateralUTxO.txHash, this.setupConstants.collateralUTxO.outputIndex)
-      .changeAddress(this.setupConstants.walletAddress)
-      .signingKey(this.setupConstants.skey)
+      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .changeAddress(this.constants.walletAddress)
+      .signingKey(this.constants.skey)
       .complete();
     const txHash = await this.signSubmitReset();
     return txHash;
@@ -134,50 +76,110 @@ export class ScriptsSetup {
       .txIn(txInHash, txInId)
       .txOut(refScriptsAddress, [])
       .txOutReferenceScript(scriptCbor)
-      .changeAddress(this.setupConstants.walletAddress)
-      .signingKey(this.setupConstants.skey)
+      .changeAddress(this.constants.walletAddress)
+      .signingKey(this.constants.skey)
       .complete();
     const txHash = await this.signSubmitReset();
     return txHash;
   };
 
-  setupOracleUtxo = async (txInHash: string, txInId: number) => {
+  setupOracleUtxo = async (txInHash: string, txInId: number, nftTxHash: string, nftTxId: number) => {
     const scriptCbor = getScriptCbor("OracleValidator");
     const oracleValidatorScriptHash = getV2ScriptHash(scriptCbor);
-    const oracleAddr = mScriptAddress(getV2ScriptHash(scriptCbor));
-    const contentRefTokenPolicyId = getScriptHash("ContentRefToken");
-    const contentRegistryAddr = mScriptAddress(getScriptHash("ContentRegistry"));
-    const ownershipRefTokenPolicyId = getScriptHash("OwnershipRefToken");
-    const ownershipRegistryAddr = mScriptAddress(getScriptHash("OwnershipRegistry"));
     const oracleAddrBech32 = v2ScriptHashToBech32(oracleValidatorScriptHash);
-    const serializedOpsAddr = serializeBech32Address(operationAddress);
-    const serializedStopAddr = serializeBech32Address(refScriptsAddress);
 
-    const datumValue = mConStr0([
-      oraclePolicyId,
-      oracleAddr,
-      contentRefTokenPolicyId,
-      contentRegistryAddr,
-      0,
-      ownershipRefTokenPolicyId,
-      ownershipRegistryAddr,
-      0,
-      serializedOpsAddr.pubKeyHash,
-      serializedStopAddr.pubKeyHash,
-    ]);
+    const datumValue = this.getOracleDatum(0, 0);
 
-    this.mesh.meshTxBuilderBody = makeMeshTxBuilderBody();
     await this.mesh
       .txIn(txInHash, txInId)
+      .txIn(nftTxHash, nftTxId)
       .txOut(oracleAddrBech32, [{ unit: oraclePolicyId + "", quantity: "1" }])
       .txOutInlineDatumValue(datumValue)
-      .changeAddress(this.setupConstants.walletAddress)
-      .signingKey(this.setupConstants.skey)
+      .changeAddress(this.constants.walletAddress)
+      .signingKey(this.constants.skey)
       .complete();
 
     const txHash = await this.signSubmitReset();
-    console.log("txHash", txHash);
+    return txHash;
+  };
 
+  createContentRegistry = async (txInHash: string, txInId: number, contentNumber: number, ownershipNumber: number) => {
+    const contentTokenName = stringToHex(`Registry (${contentNumber})`);
+    const scriptUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress);
+    console.log("oracle utxo", scriptUtxo);
+
+    const oracleValidatorTxHash = scriptUtxo[0].input.txHash;
+    const oracleValidatorTxId = scriptUtxo[0].input.outputIndex;
+    const oracleDatumValue = this.getOracleDatum(contentNumber + 1, ownershipNumber);
+    console.log("Oracle Datum", oracleDatumValue);
+    const contentDatumValue = mConStr0([0, []]);
+
+    await this.mesh
+      .txIn(txInHash, txInId)
+      .spendingPlutusScriptV2()
+      .txIn(oracleValidatorTxHash, oracleValidatorTxId)
+      .txInInlineDatumPresent()
+      .txInRedeemerValue(mConStr0([]))
+      .spendingTxInReference(oracleValidatorRefTxHash, Number(oracleValidatorRefTxId), getScriptHash("OracleValidator"))
+      .txOut(oracleAddress, [{ unit: oraclePolicyId + "", quantity: "1" }])
+      .txOutInlineDatumValue(oracleDatumValue)
+      .txOut(contentAddress, [{ unit: contentPolicyId + contentTokenName, quantity: "1" }])
+      .txOutInlineDatumValue(contentDatumValue)
+      .mintPlutusScriptV2()
+      .mint(1, contentPolicyId, contentTokenName)
+      .mintTxInReference(contentTokenRefTxHash, Number(contentTokenRefTxId))
+      .mintRedeemerValue(mConStr0([]))
+      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .changeAddress(this.constants.walletAddress)
+      .signingKey(this.constants.skey)
+      .complete();
+
+    const txHash = await this.signSubmitReset();
+    return txHash;
+  };
+
+  createOwnershipRegistry = async (
+    txInHash: string,
+    txInId: number,
+    contentNumber: number,
+    ownershipNumber: number
+  ) => {
+    const oracleAddrBech32 = v2ScriptHashToBech32(getScriptHash("OracleValidator"));
+    const ownershipRegistryBech32 = v2ScriptHashToBech32(getScriptHash("OwnershipRegistry"));
+    const ownershipTokenPolicyId = getScriptHash("OwnershipRefToken");
+    const ownershipTokenName = stringToHex(`Registry (${ownershipNumber})`);
+    const scriptUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddrBech32);
+    console.log("oracle utxo", scriptUtxo);
+
+    const oracleValidatorTxHash = scriptUtxo[0].input.txHash;
+    const oracleValidatorTxId = scriptUtxo[0].input.outputIndex;
+    const oracleDatumValue = this.getOracleDatum(contentNumber, ownershipNumber + 1);
+    console.log("Oracle Datum", oracleDatumValue);
+    const ownershipDatumValue = mConStr0([0, []]);
+
+    this.mesh.meshTxBuilderBody = makeMeshTxBuilderBody();
+
+    await this.mesh
+      .txIn(txInHash, txInId)
+      .spendingPlutusScriptV2()
+      .txIn(oracleValidatorTxHash, oracleValidatorTxId)
+      .txInInlineDatumPresent()
+      .txInRedeemerValue(mConStr1([]))
+      .spendingTxInReference(oracleValidatorRefTxHash, Number(oracleValidatorRefTxId), getScriptHash("OracleValidator"))
+      .txOut(oracleAddrBech32, [{ unit: oraclePolicyId + "", quantity: "1" }])
+      .txOutInlineDatumValue(oracleDatumValue)
+      .txOut(ownershipRegistryBech32, [{ unit: ownershipTokenPolicyId + ownershipTokenName, quantity: "1" }])
+      .txOutInlineDatumValue(ownershipDatumValue)
+      .mintPlutusScriptV2()
+      .mint(1, ownershipTokenPolicyId, ownershipTokenName)
+      .mintTxInReference(ownershipTokenRefTxHash, Number(ownershipTokenRefTxId))
+      .mintRedeemerValue(mConStr0([]))
+      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .changeAddress(this.constants.walletAddress)
+      .signingKey(this.constants.skey)
+      .complete();
+
+    const txHash = await this.signSubmitReset();
     return txHash;
   };
 }
