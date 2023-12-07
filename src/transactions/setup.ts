@@ -87,7 +87,6 @@ export class ScriptsSetup extends MeshTxInitiator {
     const scriptCbor = getScriptCbor("OracleValidator");
     const oracleValidatorScriptHash = getV2ScriptHash(scriptCbor);
     const oracleAddrBech32 = v2ScriptHashToBech32(oracleValidatorScriptHash);
-
     const datumValue = this.getOracleDatum(0, 0);
 
     await this.mesh
@@ -103,16 +102,18 @@ export class ScriptsSetup extends MeshTxInitiator {
     return txHash;
   };
 
-  createContentRegistry = async (txInHash: string, txInId: number, contentNumber: number, ownershipNumber: number) => {
+  createContentRegistry = async (txInHash: string, txInId: number) => {
+    const currentOracleDatum = await this.getCurrentOracleDatum();
+    const contentNumber = currentOracleDatum.fields[4].int;
+    const ownershipNumber = currentOracleDatum.fields[7].int;
+
     const contentTokenName = stringToHex(`Registry (${contentNumber})`);
     const scriptUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress);
-    console.log("oracle utxo", scriptUtxo);
-
     const oracleValidatorTxHash = scriptUtxo[0].input.txHash;
     const oracleValidatorTxId = scriptUtxo[0].input.outputIndex;
     const oracleDatumValue = this.getOracleDatum(contentNumber + 1, ownershipNumber);
-    console.log("Oracle Datum", oracleDatumValue);
     const contentDatumValue = mConStr0([0, []]);
+    console.log("Oracle Datum", oracleDatumValue);
 
     await this.mesh
       .txIn(txInHash, txInId)
@@ -134,16 +135,15 @@ export class ScriptsSetup extends MeshTxInitiator {
       .signingKey(this.constants.skey)
       .complete();
 
-    // const txHash = await this.signSubmitReset();
-    // return txHash;
+    const txHash = await this.signSubmitReset();
+    return txHash;
   };
 
-  createOwnershipRegistry = async (
-    txInHash: string,
-    txInId: number,
-    contentNumber: number,
-    ownershipNumber: number
-  ) => {
+  createOwnershipRegistry = async (txInHash: string, txInId: number) => {
+    const currentOracleDatum = await this.getCurrentOracleDatum();
+    const contentNumber = currentOracleDatum.fields[4].int;
+    const ownershipNumber = currentOracleDatum.fields[7].int;
+
     const oracleAddrBech32 = v2ScriptHashToBech32(getScriptHash("OracleValidator"));
     const ownershipRegistryBech32 = v2ScriptHashToBech32(getScriptHash("OwnershipRegistry"));
     const ownershipTokenPolicyId = getScriptHash("OwnershipRefToken");
@@ -183,16 +183,3 @@ export class ScriptsSetup extends MeshTxInitiator {
     return txHash;
   };
 }
-
-// pub type OracleDatum {
-//   oracle_nft: PolicyId,
-//   oracle_address: Address,
-//   content_registry_ref_token: PolicyId,
-//   content_registry_address: Address,
-//   content_registry_count: Int,
-//   ownership_registry_ref_token: PolicyId,
-//   ownership_registry_address: Address,
-//   ownership_registry_count: Int,
-//   operation_key: ByteArray,
-//   stop_key: ByteArray,
-// }

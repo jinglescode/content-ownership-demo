@@ -132,7 +132,7 @@ export default function Admin() {
     const utxo = await getUtxosWithMinLovelace(10000000);
     const txHash = utxo[0].input.txHash;
     const txId = utxo[0].input.outputIndex;
-    const confirmTxHash = await setup.createContentRegistry(txHash, txId, 0, 0);
+    const confirmTxHash = await setup.createContentRegistry(txHash, txId);
     console.log("TxHash", confirmTxHash);
   };
 
@@ -140,7 +140,7 @@ export default function Admin() {
     const utxo = await getUtxosWithMinLovelace(20000000);
     const txHash = utxo[0].input.txHash;
     const txId = utxo[0].input.outputIndex;
-    const confirmTxHash = await setup.createOwnershipRegistry(txHash, txId, 1, 0);
+    const confirmTxHash = await setup.createOwnershipRegistry(txHash, txId);
     console.log("TxHash", confirmTxHash);
   };
 

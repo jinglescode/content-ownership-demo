@@ -20,6 +20,7 @@ import {
 } from "./common";
 import { BuiltinByteString, mConStr, parseInlineDatum, stringToHex } from "@sidan-lab/sidan-csl";
 import { toPlutusData } from "@/aiken";
+import { ContentRegistryDatum, OwnershipRegistryDatum } from "./type";
 
 export class UserAction extends MeshTxInitiator {
   constructor(mesh: MeshTxBuilder, fetcher: IFetcher, constants: TxConstants) {
@@ -71,17 +72,17 @@ export class UserAction extends MeshTxInitiator {
   };
 
   private updateContentRegistry = (plutusData: string, newContentHash: string): Data => {
-    const contentRegistry = parseInlineDatum<any, any>({
+    const contentRegistry = parseInlineDatum<any, ContentRegistryDatum>({
       inline_datum: plutusData,
-    }).fields[1].list.map((plutusBytes: BuiltinByteString) => plutusBytes.bytes);
+    }).fields[1].list.map((plutusBytes) => plutusBytes.bytes);
     const newContentRegistry = this.getContentDatum([...contentRegistry, newContentHash]);
     return newContentRegistry;
   };
 
   private updateOwnershipRegistry = (plutusData: string, ownerAssetClass: [string, string]): Data => {
-    const ownershipRegistry = parseInlineDatum<any, any>({
+    const ownershipRegistry = parseInlineDatum<any, OwnershipRegistryDatum>({
       inline_datum: plutusData,
-    }).fields[1].list.map((plutusBytesArray: { list: [BuiltinByteString, BuiltinByteString] }) => [
+    }).fields[1].list.map((plutusBytesArray): [string, string] => [
       plutusBytesArray.list[0].bytes,
       plutusBytesArray.list[1].bytes,
     ]);

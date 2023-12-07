@@ -8,7 +8,9 @@ import {
   mScriptAddress,
   serializeBech32Address,
   v2ScriptHashToBech32,
+  parseInlineDatum,
 } from "@sidan-lab/sidan-csl";
+import { OracleDatum } from "./type";
 
 export type InputUTxO = UTxO["input"];
 
@@ -132,6 +134,12 @@ export class MeshTxInitiator {
     const txHash = await this.mesh.submitTx(signedTx);
     this.mesh.meshTxBuilderBody = makeMeshTxBuilderBody();
     return txHash;
+  };
+
+  protected getCurrentOracleDatum = async () => {
+    const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    const oracleDatum = parseInlineDatum<any, OracleDatum>({ inline_datum: oracleUtxo[0].output.plutusData! });
+    return oracleDatum;
   };
 
   protected getOracleDatum = (contentRegistryCount: number, ownershipRegistryCount: number) => {
