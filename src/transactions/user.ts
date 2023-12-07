@@ -1,4 +1,4 @@
-import { MeshTxBuilder, IFetcher, UTxO } from "@meshsdk/core";
+import { MeshTxBuilder, IFetcher, UTxO, Data } from "@meshsdk/core";
 import {
   InputUTxO,
   MeshTxInitiator,
@@ -10,6 +10,7 @@ import {
   getScriptCbor,
   getScriptHash,
   oracleAddress,
+  oraclePolicyId,
   oracleValidatorRefTxHash,
   oracleValidatorRefTxId,
   ownershipAddress,
@@ -17,7 +18,8 @@ import {
   ownershipRegistryRefTxHash,
   ownershipRegistryRefTxId,
 } from "./common";
-import { mConStr, parseInlineDatum, stringToHex } from "@sidan-lab/sidan-csl";
+import { BuiltinByteString, mConStr, parseInlineDatum, stringToHex } from "@sidan-lab/sidan-csl";
+import { toPlutusData } from "@/aiken";
 
 export class UserAction extends MeshTxInitiator {
   constructor(mesh: MeshTxBuilder, fetcher: IFetcher, constants: TxConstants) {
@@ -25,18 +27,19 @@ export class UserAction extends MeshTxInitiator {
   }
 
   createContent = async (feeUtxo: InputUTxO, ownerAssetHex: string, contentHash: string, registryNumber = 0) => {
-    const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress);
-    const contentUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(contentAddress);
-    const ownershipUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(ownershipAddress);
     const registryName = stringToHex(`Registry (${registryNumber})`);
+    const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    const contentUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryName);
+    const ownershipUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(
+      ownershipAddress,
+      ownershipPolicyId + registryName
+    );
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
     const { txHash: contentTxHash, outputIndex: contentTxId } = contentUtxo[0].input;
     const { txHash: ownershipTxHash, outputIndex: ownershipTxId } = ownershipUtxo[0].input;
-    const contentRegistry = parseInlineDatum<any, any>({ inline_datum: contentUtxo[0].output.plutusData }).fields[1]
-      .list;
-    const ownershipRegistry = parseInlineDatum<any, any>({ inline_datum: ownershipUtxo[0].output.plutusData }).fields[1]
-      .list;
     const ownerAssetClass: [string, string] = [ownerAssetHex.slice(0, 56), ownerAssetHex.slice(56)];
+    const newContentRegistry = this.updateContentRegistry(contentUtxo[0].output.plutusData!, contentHash);
+    const newOwnershipRegistry = this.updateOwnershipRegistry(ownershipUtxo[0].output.plutusData!, ownerAssetClass);
 
     await this.mesh
       .txIn(feeUtxo.txHash, feeUtxo.outputIndex)
@@ -46,7 +49,7 @@ export class UserAction extends MeshTxInitiator {
       .txInRedeemerValue(mConStr(0, [contentHash, ownerAssetClass]))
       .spendingTxInReference(contentRegistryRefTxHash, Number(contentRegistryRefTxId), getScriptHash("ContentRegistry"))
       .txOut(contentAddress, [{ unit: contentPolicyId + registryName, quantity: "1" }])
-      .txOutInlineDatumValue(this.getContentDatum([...contentRegistry, contentHash]))
+      .txOutInlineDatumValue(newContentRegistry)
       .spendingPlutusScriptV2()
       .txIn(ownershipTxHash, ownershipTxId)
       .txInInlineDatumPresent()
@@ -57,13 +60,32 @@ export class UserAction extends MeshTxInitiator {
         getScriptHash("OwnershipRegistry")
       )
       .txOut(ownershipAddress, [{ unit: ownershipPolicyId + registryName, quantity: "1" }])
-      .txOutInlineDatumValue(this.getOwnershipDatum([...ownershipRegistry, ownerAssetClass]))
+      .txOutInlineDatumValue(newOwnershipRegistry)
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
       .changeAddress(this.constants.walletAddress)
       .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey) // TODO: Remove the signing key if it is preferred to be used by user from frontend
       .complete();
-    const txHash = await this.signSubmitReset();
+    const txHash = await this.signSubmitReset(); // TODO: Use completeSigning to build the TxHex for frontend signing instead
     return txHash;
+  };
+
+  private updateContentRegistry = (plutusData: string, newContentHash: string): Data => {
+    const contentRegistry = parseInlineDatum<any, any>({
+      inline_datum: plutusData,
+    }).fields[1].list.map((plutusBytes: BuiltinByteString) => plutusBytes.bytes);
+    const newContentRegistry = this.getContentDatum([...contentRegistry, newContentHash]);
+    return newContentRegistry;
+  };
+
+  private updateOwnershipRegistry = (plutusData: string, ownerAssetClass: [string, string]): Data => {
+    const ownershipRegistry = parseInlineDatum<any, any>({
+      inline_datum: plutusData,
+    }).fields[1].list.map((plutusBytesArray: { list: [BuiltinByteString, BuiltinByteString] }) => [
+      plutusBytesArray.list[0].bytes,
+      plutusBytesArray.list[1].bytes,
+    ]);
+    const newContentRegistry = this.getOwnershipDatum([...ownershipRegistry, ownerAssetClass]);
+    return newContentRegistry;
   };
 }

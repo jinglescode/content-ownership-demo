@@ -1,10 +1,11 @@
-import { InfuraProvider, MaestroProvider, MeshTxBuilder, Data, IFetcher } from "@meshsdk/core";
-import { blueprint, applyParamsToScript } from "../aiken";
+import { InfuraProvider, MaestroProvider, MeshTxBuilder, IFetcher } from "@meshsdk/core";
 import { AdminAction, ScriptsSetup } from "@/transactions";
 import { useWallet } from "@meshsdk/react";
 import { TxConstants, oraclePolicyId } from "@/transactions/common";
 import { UserAction } from "@/transactions/user";
-import { stringToHex } from "@sidan-lab/sidan-csl";
+import { mConStr0, stringToHex } from "@sidan-lab/sidan-csl";
+import multihashes from "multihashes";
+import { toPlutusData } from "@/aiken";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -16,8 +17,12 @@ const maestro = new MaestroProvider({ apiKey: process.env.NEXT_PUBLIC_MAESTRO_AP
 const walletAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
 const skey = process.env.NEXT_PUBLIC_SKEY!;
 
+// 1. Uploading content to IPFS + create content on-chain
+// 2. Retrieve content from blockchain, resolve back to content stored in IPFS
+
 export default function Home() {
   const { connect, connected, wallet } = useWallet();
+
   async function uploadMarkdown() {
     const content = "---\ntitle: Hello World\n---\n\n# Hello World\n\nThis is my first post!";
 
@@ -28,43 +33,34 @@ export default function Home() {
     let formData = new FormData();
     formData.append("blob", blob, "test.md");
 
-    const res = await infura.uploadContent(formData);
-    console.log(9, res);
-
+    const res: any = await infura.uploadContent(formData);
     // {Hash: "QmfYKhKUo3guDQyATYyTuzokkPXaeMqNro73P6iCJEmGAj",
     // Name: "test.md",
     // Size: "73",}
+    const ipfsHash: string = res.Hash;
 
-    return res;
-    // https://ipfs.io/ipfs/QmfYKhKUo3guDQyATYyTuzokkPXaeMqNro73P6iCJEmGAj
+    const ipfsContentBytes = multihashes.fromB58String(ipfsHash);
+    const ipfsContentHex = Buffer.from(ipfsContentBytes).toString("hex").slice(4);
+
+    console.log("IPFS Hash", ipfsContentHex, ipfsContentHex.length);
+
+    await createContent(ipfsContentHex);
+    // return res;
   }
+
+  const decodeOnchainRecord = (hexString: string) => {
+    const decodedBytes = Buffer.from("1220" + hexString, "hex");
+    const decodedIpfsHash = multihashes.toB58String(decodedBytes);
+    return decodedIpfsHash;
+  };
 
   async function createTokens() {
     // create cip68 tokens so that CID is stored on chain and owner can update it
   }
 
   const queryUtxos = async () => {
-    // const utxos = await maestro.fetchAddressUTxOs(walletAddress);
-    // // console.log(utxos);
-    // console.log(
-    //   "UTXOS",
-    //   utxos.map((u) => {
-    //     return {
-    //       txHash: u.input.txHash,
-    //       txId: u.input.outputIndex,
-    //       amount: u.output.amount,
-    //     };
-    //   })
-    // );
-
-    const oracleUtxo = await maestro.fetchAddressUTxOs(
-      "addr_test1wr3rrjfrwrakpz6rmn7uw4rk80hmzasgh7v9ehz5z8yp0cscavawv"
-    );
-    console.log("Oracle UTXO", oracleUtxo);
-    // const correctUtxo = await getUtxosWithMinLovelace(100000000);
-    // console.log("Correct UTXO", correctUtxo);
-
-    // return utxos;
+    const plutusData = toPlutusData(mConStr0(["1231512", ["123412", "12512"]]));
+    console.log("Plutus Data", plutusData.to_json(1));
   };
 
   const getUtxosWithMinLovelace = async (lovelace: number) => {
@@ -105,7 +101,6 @@ export default function Home() {
   const setup = new ScriptsSetup(...txParams);
   const admin = new AdminAction(...txParams);
   const user = new UserAction(...txParams);
-  // console.log("Param scripts", paramScript);
 
   const mintOneTimeMintingPolicy = async () => {
     const utxo = await getUtxosWithMinLovelace(100000000);
@@ -169,12 +164,12 @@ export default function Home() {
     console.log("TxHash", confirmTxHash);
   };
 
-  const createContent = async () => {
+  const createContent = async (contentHex = "ff942613ef86667df9e8f2488f29615fc9aaad7906e266f686153d5b7c81abe0") => {
     const utxo = await getUtxosWithMinLovelace(20000000);
     const txHash = await user.createContent(
       utxo[0].input,
       "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
-      stringToHex("QmWBaeu6y1zEcKbsEqCuhuDHPL3W8pZo"),
+      contentHex,
       0
     );
     console.log("TxHash", txHash);
@@ -208,6 +203,9 @@ export default function Home() {
       <button className="m-2 p-2 bg-blue-500" onClick={() => createContent()}>
         Create Content
       </button>
+      <button className="m-2 p-2 bg-blue-500" onClick={() => uploadMarkdown()}>
+        Upload MD
+      </button>
       <button className="m-2 p-2 bg-red-400" onClick={() => stopContentRegistry()}>
         Stop Content Registry
       </button>
@@ -215,7 +213,7 @@ export default function Home() {
         Stop Oracle
       </button>
       <button className="m-2 p-2 bg-slate-500" onClick={() => queryUtxos()}>
-        Query
+        Test
       </button>
     </main>
   );

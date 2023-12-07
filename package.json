@@ -13,6 +13,7 @@
     "@meshsdk/core": "1.5.11-beta.2",
     "@meshsdk/react": "^1.1.7",
     "@sidan-lab/sidan-csl": "^0.1.11",
+    "multihashes": "^4.0.3",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest"

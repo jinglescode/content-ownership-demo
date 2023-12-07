@@ -9,7 +9,7 @@ const toBytes = (hex: string): Uint8Array => {
   return Buffer.from(hex, "utf-8");
 };
 
-const toPlutusData = (data: Data) => {
+export const toPlutusData = (data: Data) => {
   const toPlutusList = (data: Data[]) => {
     const plutusList = C.PlutusList.new();
     data.forEach((element) => {
