@@ -136,8 +136,11 @@ export class MeshTxInitiator {
     return txHash;
   };
 
-  protected getCurrentOracleDatum = async () => {
-    const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+  protected getCurrentOracleDatum = async (utxos?: UTxO[]) => {
+    let oracleUtxo: UTxO[] = utxos || [];
+    if (oracleUtxo.length === 0) {
+      oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    }
     const oracleDatum = parseInlineDatum<any, OracleDatum>({ inline_datum: oracleUtxo[0].output.plutusData! });
     return oracleDatum;
   };
