@@ -1,40 +1,46 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Demo on content ownership
 
-## Getting Started
+## Before Start
 
-First, run the development server:
+1. Prepare the env as the [`.env.example`](.env.example)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   - Prepare the API needed keys
+     - NEXT_PUBLIC_INFURA_PROJECT_ID
+     - NEXT_PUBLIC_INFURA_PROJECT_SECRET
+     - NEXT_PUBLIC_MAESTRO_APIKEY
+   - Prepare the admin wallet
+     - NEXT_PUBLIC_SKEY (the skey generated from `cardano-cli`)
+     - NEXT_PUBLIC_WALLET_ADDRESS (the derived wallet from the signing key)
+     - NEXT_PUBLIC_REF_SCRIPTS_ADDR (the address where you would never touch, to store the reference script)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Setup the application
+   1. To mint the Oracle NFT
+   2. Configure the Policy to `NEXT_PUBLIC_ORACLE_NFT_POLICY_ID` env.
+   3. Sending reference script of all script except oracle NFT, and set the env of below, all in format of `TXHASH#TXID`:
+      - NEXT_PUBLIC_ORACLE_VALIDATOR_REF_UTXO
+      - NEXT_PUBLIC_CONTENT_TOKEN_REF_UTXO
+      - NEXT_PUBLIC_OWNERSHIP_TOKEN_REF_UTXO
+      - NEXT_PUBLIC_CONTENT_REGISTRY_REF_UTXO
+      - NEXT_PUBLIC_OWNERSHIP_REGISTRY_REF_UTXO
+   4. Set up the oracle validator
+   5. Create `ContentRegistry` and `OwnershipRegistry` to the scale needed (1 pair at a time)
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Using the application
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Users can interact with the content ownership scripts with 3 major actions:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+1. Creating content
+2. Transfer content
+3. Update content
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Admin action
 
-## Learn More
+If the application is no longer in used, it could be stopped by admin actions for unlocking minUTxO with the registries:
 
-To learn more about Next.js, take a look at the following resources:
+1. Stop content registry
+2. Stop ownership registry
+3. Stop app oracle (DANGER: After this is triggered, registries could not be stopped anymore and there would be permanently locked ADA)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API testing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+All script actions could be testing in `/admin`
