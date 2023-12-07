@@ -154,6 +154,16 @@ export default function Admin() {
     console.log("TxHash", confirmTxHash);
   };
 
+  const stopOwnershipRegistry = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const txBody = await admin.stopOwnershipRegistry(txHash, txId, 1);
+    const signedTx = await wallet.signTx(txBody, true);
+    const confirmTxHash = await maestro.submitTx(signedTx);
+    console.log("TxHash", confirmTxHash);
+  };
+
   const stopOracle = async () => {
     const utxo = await getUtxosWithMinLovelace(20000000);
     const txHash = utxo[0].input.txHash;
@@ -173,6 +183,26 @@ export default function Admin() {
       0
     );
     console.log("TxHash", txHash);
+  };
+
+  const updateContent = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const txBody = await user.updateContent(txHash, txId, 1);
+    const signedTx = await wallet.signTx(txBody, true);
+    const confirmTxHash = await maestro.submitTx(signedTx);
+    console.log("TxHash", confirmTxHash);
+  };
+
+  const transferContent = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = utxo[0].input.txHash;
+    const txId = utxo[0].input.outputIndex;
+    const txBody = await user.transferContent(txHash, txId, 1);
+    const signedTx = await wallet.signTx(txBody, true);
+    const confirmTxHash = await maestro.submitTx(signedTx);
+    console.log("TxHash", confirmTxHash);
   };
 
   return (
@@ -203,11 +233,20 @@ export default function Admin() {
       <button className="m-2 p-2 bg-blue-500" onClick={() => createContent()}>
         Create Content
       </button>
+      <button className="m-2 p-2 bg-blue-500" onClick={() => updateContent()}>
+        Update Content
+      </button>
+      <button className="m-2 p-2 bg-blue-500" onClick={() => transferContent()}>
+        Transfer Content
+      </button>
       <button className="m-2 p-2 bg-blue-500" onClick={() => uploadMarkdown()}>
-        Upload MD
+        Test: Upload MD
       </button>
       <button className="m-2 p-2 bg-red-400" onClick={() => stopContentRegistry()}>
         Stop Content Registry
+      </button>
+      <button className="m-2 p-2 bg-red-400" onClick={() => stopOwnershipRegistry()}>
+        Stop Ownership Registry
       </button>
       <button className="m-2 p-2 bg-red-400" onClick={() => stopOracle()}>
         Stop Oracle

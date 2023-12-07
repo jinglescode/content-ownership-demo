@@ -24,7 +24,6 @@ export class AdminAction extends MeshTxInitiator {
   }
 
   stopContentRegistry = async (txInHash: string, txInId: number, registryNumber: number) => {
-    // TODO: To test
     const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
     const scriptUtxos = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex);
     const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
@@ -53,7 +52,6 @@ export class AdminAction extends MeshTxInitiator {
   };
 
   stopOwnershipRegistry = async (txInHash: string, txInId: number, registryNumber: number) => {
-    // TODO: To test
     const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
     const scriptUtxos = await this.fetcher.fetchAddressUTxOs(
       ownershipAddress,

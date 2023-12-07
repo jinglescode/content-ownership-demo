@@ -27,6 +27,7 @@ export class UserAction extends MeshTxInitiator {
     super(mesh, fetcher, constants);
   }
 
+  // TODO: Input user's address
   createContent = async (feeUtxo: InputUTxO, ownerAssetHex: string, contentHash: string, registryNumber = 0) => {
     const registryName = stringToHex(`Registry (${registryNumber})`);
     const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
@@ -63,12 +64,67 @@ export class UserAction extends MeshTxInitiator {
       .txOut(ownershipAddress, [{ unit: ownershipPolicyId + registryName, quantity: "1" }])
       .txOutInlineDatumValue(newOwnershipRegistry)
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
-      .changeAddress(this.constants.walletAddress)
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
-      .signingKey(this.constants.skey) // TODO: Remove the signing key if it is preferred to be used by user from frontend
+      .changeAddress(this.constants.walletAddress) // TODO: Change to user's address
+      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex) // TODO: Change to user's address
       .complete();
-    const txHash = await this.signSubmitReset(); // TODO: Use completeSigning to build the TxHex for frontend signing instead
-    return txHash;
+    const txHex = await this.mesh.completeSigning();
+    return txHex;
+  };
+
+  updateContent = async (txInHash: string, txInId: number, registryNumber: number) => {
+    // TODO
+    // const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    // const scriptUtxos = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex);
+    // const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    // const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
+    // const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
+    // await this.mesh
+    //   .txIn(txInHash, txInId)
+    //   .spendingPlutusScriptV2()
+    //   .txIn(validatorTxHash, validatorTxId)
+    //   .txInInlineDatumPresent()
+    //   .txInRedeemerValue(mConStr(2, []))
+    //   .txInScript(getScriptCbor("ContentRegistry"))
+    //   .mintPlutusScriptV2()
+    //   .mint(-1, contentPolicyId, registryTokenNameHex)
+    //   .mintTxInReference(contentTokenRefTxHash, Number(contentTokenRefTxId))
+    //   .mintRedeemerValue(mConStr1([]))
+    //   .readOnlyTxInReference(oracleTxHash, oracleTxId)
+    //   .changeAddress(this.constants.walletAddress)
+    //   .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+    //   .requiredSignerHash(stopKey)
+    //   .signingKey(this.constants.skey)
+    //   .complete();
+    // const txBody = this.mesh.completeSigning();
+    return "";
+  };
+
+  transferContent = async (txInHash: string, txInId: number, registryNumber: number) => {
+    // TODO
+    // const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    // const scriptUtxos = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex);
+    // const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    // const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
+    // const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
+    // await this.mesh
+    //   .txIn(txInHash, txInId)
+    //   .spendingPlutusScriptV2()
+    //   .txIn(validatorTxHash, validatorTxId)
+    //   .txInInlineDatumPresent()
+    //   .txInRedeemerValue(mConStr(2, []))
+    //   .txInScript(getScriptCbor("ContentRegistry"))
+    //   .mintPlutusScriptV2()
+    //   .mint(-1, contentPolicyId, registryTokenNameHex)
+    //   .mintTxInReference(contentTokenRefTxHash, Number(contentTokenRefTxId))
+    //   .mintRedeemerValue(mConStr1([]))
+    //   .readOnlyTxInReference(oracleTxHash, oracleTxId)
+    //   .changeAddress(this.constants.walletAddress)
+    //   .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+    //   .requiredSignerHash(stopKey)
+    //   .signingKey(this.constants.skey)
+    //   .complete();
+    // const txBody = this.mesh.completeSigning();
+    return "";
   };
 
   private updateContentRegistry = (plutusData: string, newContentHash: string): Data => {
