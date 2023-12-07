@@ -18,12 +18,18 @@ export const [oracleValidatorRefTxHash, oracleValidatorRefTxId] =
 export const [contentTokenRefTxHash, contentTokenRefTxId] = process.env.NEXT_PUBLIC_CONTENT_TOKEN_REF_UTXO!.split("#");
 export const [ownershipTokenRefTxHash, ownershipTokenRefTxId] =
   process.env.NEXT_PUBLIC_OWNERSHIP_TOKEN_REF_UTXO!.split("#");
+export const [contentRegistryRefTxHash, contentRegistryRefTxId] =
+  process.env.NEXT_PUBLIC_CONTENT_REGISTRY_REF_UTXO!.split("#");
+export const [ownershipRegistryRefTxHash, ownershipRegistryRefTxId] =
+  process.env.NEXT_PUBLIC_OWNERSHIP_REGISTRY_REF_UTXO!.split("#");
 export const operationAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
 export const oraclePolicyId = process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!;
 
 console.log("OracleVal Ref", oracleValidatorRefTxHash, oracleValidatorRefTxId);
 console.log("ContentToken Ref", contentTokenRefTxHash, contentTokenRefTxId);
 console.log("OwnershipToken Ref", ownershipTokenRefTxHash, ownershipTokenRefTxId);
+console.log("Content Registry Ref", contentRegistryRefTxHash, contentRegistryRefTxId);
+console.log("Ownership Registry Ref", ownershipRegistryRefTxHash, ownershipRegistryRefTxId);
 
 export type ScriptIndex =
   | "OracleNFT"
@@ -87,6 +93,9 @@ export const makeMeshTxBuilderBody = () => {
 export const oracleValScriptHash = getScriptHash("OracleValidator");
 export const contentRegScriptHash = getScriptHash("ContentRegistry");
 export const ownershipRegScriptHash = getScriptHash("OwnershipRegistry");
+console.log("OracleVal Script Hash", oracleValScriptHash);
+console.log("ContentReg Script Hash", contentRegScriptHash);
+console.log("OwnershipReg Script Hash", ownershipRegScriptHash);
 
 // export const oraclePolicyId = getScriptHash("OracleNFT");
 export const contentPolicyId = getScriptHash("ContentRefToken");
@@ -142,5 +151,13 @@ export class MeshTxInitiator {
       opsKey,
       stopKey,
     ]);
+  };
+
+  protected getContentDatum = (contentArray: string[]) => {
+    return mConStr0([contentArray.length, contentArray]);
+  };
+
+  protected getOwnershipDatum = (ownershipArray: [string, string][]) => {
+    return mConStr0([ownershipArray.length, ownershipArray]);
   };
 }

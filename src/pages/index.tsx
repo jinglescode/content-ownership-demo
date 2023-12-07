@@ -3,6 +3,8 @@ import { blueprint, applyParamsToScript } from "../aiken";
 import { AdminAction, ScriptsSetup } from "@/transactions";
 import { useWallet } from "@meshsdk/react";
 import { TxConstants, oraclePolicyId } from "@/transactions/common";
+import { UserAction } from "@/transactions/user";
+import { stringToHex } from "@sidan-lab/sidan-csl";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -84,7 +86,7 @@ export default function Home() {
   const mesh = new MeshTxBuilder({
     fetcher: maestro,
     submitter: maestro,
-    evaluator: maestro,
+    // evaluator: maestro,
   });
 
   const txParams: [MeshTxBuilder, IFetcher, TxConstants] = [
@@ -102,6 +104,7 @@ export default function Home() {
 
   const setup = new ScriptsSetup(...txParams);
   const admin = new AdminAction(...txParams);
+  const user = new UserAction(...txParams);
   // console.log("Param scripts", paramScript);
 
   const mintOneTimeMintingPolicy = async () => {
@@ -115,7 +118,7 @@ export default function Home() {
     const utxo = await getUtxosWithMinLovelace(100000000);
     const txHash = utxo[0].input.txHash;
     const txId = utxo[0].input.outputIndex;
-    const confirmTxHash = await setup.sendRefScriptOnchain(txHash, txId, "OwnershipRefToken");
+    const confirmTxHash = await setup.sendRefScriptOnchain(txHash, txId, "OwnershipRegistry");
     console.log("TxHash", confirmTxHash);
   };
 
@@ -166,6 +169,17 @@ export default function Home() {
     console.log("TxHash", confirmTxHash);
   };
 
+  const createContent = async () => {
+    const utxo = await getUtxosWithMinLovelace(20000000);
+    const txHash = await user.createContent(
+      utxo[0].input,
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      stringToHex("QmWBaeu6y1zEcKbsEqCuhuDHPL3W8pZo"),
+      0
+    );
+    console.log("TxHash", txHash);
+  };
+
   return (
     <main>
       <span className="text-black">Connected: {connected ? "Yes" : "No"}</span>
@@ -191,10 +205,13 @@ export default function Home() {
       <button className="m-2 p-2 bg-slate-500" onClick={() => createOwnershipRegistry()}>
         Create Ownership Registry
       </button>
-      <button className="m-2 p-2 bg-slate-500" onClick={() => stopContentRegistry()}>
+      <button className="m-2 p-2 bg-blue-500" onClick={() => createContent()}>
+        Create Content
+      </button>
+      <button className="m-2 p-2 bg-red-400" onClick={() => stopContentRegistry()}>
         Stop Content Registry
       </button>
-      <button className="m-2 p-2 bg-slate-500" onClick={() => stopOracle()}>
+      <button className="m-2 p-2 bg-red-400" onClick={() => stopOracle()}>
         Stop Oracle
       </button>
       <button className="m-2 p-2 bg-slate-500" onClick={() => queryUtxos()}>
