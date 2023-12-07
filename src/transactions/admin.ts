@@ -1,24 +1,22 @@
-import { MeshTxBuilder, IFetcher, UTxO } from "@meshsdk/core";
+import { MeshTxBuilder, IFetcher } from "@meshsdk/core";
 import {
   MeshTxInitiator,
   TxConstants,
+  contentAddress,
+  contentPolicyId,
   contentTokenRefTxHash,
   contentTokenRefTxId,
   getScriptCbor,
-  getScriptHash,
   opsKey,
   oracleAddress,
-  refScriptsAddress,
+  oraclePolicyId,
+  ownershipAddress,
+  ownershipPolicyId,
+  ownershipTokenRefTxHash,
+  ownershipTokenRefTxId,
   stopKey,
 } from "./common";
-import {
-  mConStr,
-  mConStr1,
-  mConStr2,
-  serializeBech32Address,
-  stringToHex,
-  v2ScriptHashToBech32,
-} from "@sidan-lab/sidan-csl";
+import { mConStr, mConStr1, stringToHex } from "@sidan-lab/sidan-csl";
 
 export class AdminAction extends MeshTxInitiator {
   constructor(mesh: MeshTxBuilder, fetcher: IFetcher, constants: TxConstants) {
@@ -26,26 +24,13 @@ export class AdminAction extends MeshTxInitiator {
   }
 
   stopContentRegistry = async (txInHash: string, txInId: number, registryNumber: number) => {
-    const registryAddrBech32 = v2ScriptHashToBech32(getScriptHash("ContentRegistry"));
-    const oracleAddrBech32 = v2ScriptHashToBech32(getScriptHash("OracleValidator"));
-    const scriptUtxos = await this.fetcher.fetchAddressUTxOs(registryAddrBech32);
-    const serializedStopAddr = serializeBech32Address(refScriptsAddress);
-    const contentTokenPolicyId = getScriptHash("ContentRefToken");
-    const contentTokenName = stringToHex(`Registry (${registryNumber})`);
-    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddrBech32);
-    const oracleValidatorTxHash = oracleUtxo[0].input.txHash;
-    const oracleValidatorTxId = oracleUtxo[0].input.outputIndex;
+    // TODO: To test
+    const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    const scriptUtxos = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex);
+    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
+    const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
 
-    console.log(scriptUtxos);
-    console.log(contentTokenPolicyId + contentTokenName);
-
-    const scriptUtxo = scriptUtxos.find(
-      (utxo: UTxO) =>
-        utxo.output.amount.find((amount) => amount.unit === contentTokenPolicyId + contentTokenName)?.quantity === "1"
-    );
-
-    const validatorTxHash = scriptUtxo.input.txHash;
-    const validatorTxId = scriptUtxo.input.outputIndex;
     await this.mesh
       .txIn(txInHash, txInId)
       .spendingPlutusScriptV2()
@@ -54,13 +39,45 @@ export class AdminAction extends MeshTxInitiator {
       .txInRedeemerValue(mConStr(2, []))
       .txInScript(getScriptCbor("ContentRegistry"))
       .mintPlutusScriptV2()
-      .mint(-1, contentTokenPolicyId, contentTokenName)
+      .mint(-1, contentPolicyId, registryTokenNameHex)
       .mintTxInReference(contentTokenRefTxHash, Number(contentTokenRefTxId))
       .mintRedeemerValue(mConStr1([]))
-      .readOnlyTxInReference(oracleValidatorTxHash, oracleValidatorTxId)
+      .readOnlyTxInReference(oracleTxHash, oracleTxId)
       .changeAddress(this.constants.walletAddress)
       .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
-      .requiredSignerHash(serializedStopAddr.pubKeyHash)
+      .requiredSignerHash(stopKey)
+      .signingKey(this.constants.skey)
+      .complete();
+    const txBody = this.mesh.completeSigning();
+    return txBody;
+  };
+
+  stopOwnershipRegistry = async (txInHash: string, txInId: number, registryNumber: number) => {
+    // TODO: To test
+    const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    const scriptUtxos = await this.fetcher.fetchAddressUTxOs(
+      ownershipAddress,
+      ownershipPolicyId + registryTokenNameHex
+    );
+    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
+    const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
+
+    await this.mesh
+      .txIn(txInHash, txInId)
+      .spendingPlutusScriptV2()
+      .txIn(validatorTxHash, validatorTxId)
+      .txInInlineDatumPresent()
+      .txInRedeemerValue(mConStr(2, []))
+      .txInScript(getScriptCbor("OwnershipRegistry"))
+      .mintPlutusScriptV2()
+      .mint(-1, ownershipPolicyId, registryTokenNameHex)
+      .mintTxInReference(ownershipTokenRefTxHash, Number(ownershipTokenRefTxId))
+      .mintRedeemerValue(mConStr1([]))
+      .readOnlyTxInReference(oracleTxHash, oracleTxId)
+      .changeAddress(this.constants.walletAddress)
+      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .requiredSignerHash(stopKey)
       .signingKey(this.constants.skey)
       .complete();
     const txBody = this.mesh.completeSigning();
@@ -68,20 +85,18 @@ export class AdminAction extends MeshTxInitiator {
   };
 
   stopOracle = async (txInHash: string, txInId: number) => {
-    const oracleTokenPolicyId = getScriptHash("OracleNFT");
-    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress);
-    const oracleValidatorTxHash = oracleUtxo[0].input.txHash;
-    const oracleValidatorTxId = oracleUtxo[0].input.outputIndex;
+    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
+    const { txHash, outputIndex } = oracleUtxo[0].input;
 
     await this.mesh
       .txIn(txInHash, txInId)
       .spendingPlutusScriptV2()
-      .txIn(oracleValidatorTxHash, oracleValidatorTxId)
+      .txIn(txHash, outputIndex)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(3, []))
       .txInScript(getScriptCbor("OracleValidator"))
       .mintPlutusScriptV2()
-      .mint(-1, oracleTokenPolicyId, "")
+      .mint(-1, oraclePolicyId, "")
       .mintingScript(getScriptCbor("OracleNFT"))
       .mintRedeemerValue(mConStr1([]))
       .changeAddress(this.constants.walletAddress)
