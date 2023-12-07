@@ -142,7 +142,7 @@ export default function Home() {
     const utxo = await getUtxosWithMinLovelace(20000000);
     const txHash = utxo[0].input.txHash;
     const txId = utxo[0].input.outputIndex;
-    const confirmTxHash = await setup.createOwnershipRegistry(txHash, txId, 0, 0);
+    const confirmTxHash = await setup.createOwnershipRegistry(txHash, txId, 1, 0);
     console.log("TxHash", confirmTxHash);
   };
 

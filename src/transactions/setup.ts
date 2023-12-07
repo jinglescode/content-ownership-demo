@@ -134,8 +134,8 @@ export class ScriptsSetup extends MeshTxInitiator {
       .signingKey(this.constants.skey)
       .complete();
 
-    const txHash = await this.signSubmitReset();
-    return txHash;
+    // const txHash = await this.signSubmitReset();
+    // return txHash;
   };
 
   createOwnershipRegistry = async (

@@ -21,6 +21,10 @@ export const [ownershipTokenRefTxHash, ownershipTokenRefTxId] =
 export const operationAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
 export const oraclePolicyId = process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!;
 
+console.log("OracleVal Ref", oracleValidatorRefTxHash, oracleValidatorRefTxId);
+console.log("ContentToken Ref", contentTokenRefTxHash, contentTokenRefTxId);
+console.log("OwnershipToken Ref", ownershipTokenRefTxHash, ownershipTokenRefTxId);
+
 export type ScriptIndex =
   | "OracleNFT"
   | "OracleValidator"
