@@ -1,9 +1,9 @@
-import { InfuraProvider, MaestroProvider, MeshTxBuilder, IFetcher } from "@meshsdk/core";
+import { InfuraProvider, MaestroProvider, MeshTxBuilder, IFetcher, UTxO } from "@meshsdk/core";
 import { AdminAction, ScriptsSetup } from "@/transactions";
 import { useWallet } from "@meshsdk/react";
 import { TxConstants, oraclePolicyId } from "@/transactions/common";
-import { UserAction } from "@/transactions/user";
-import { mConStr0, stringToHex } from "@sidan-lab/sidan-csl";
+import { UpdateContent, UserAction } from "@/transactions/user";
+import { mConStr0 } from "@sidan-lab/sidan-csl";
 import multihashes from "multihashes";
 import { toPlutusData } from "@/aiken";
 
@@ -63,16 +63,26 @@ export default function Admin() {
     console.log("Plutus Data", plutusData.to_json(1));
   };
 
-  const getUtxosWithMinLovelace = async (lovelace: number) => {
-    const utxos = await maestro.fetchAddressUTxOs(walletAddress);
+  const getUtxosWithMinLovelace = async (lovelace: number, userUtxos: UTxO[] = []) => {
+    let utxos: UTxO[];
+    if (userUtxos.length === 0) {
+      utxos = await maestro.fetchAddressUTxOs(walletAddress);
+    } else {
+      utxos = userUtxos;
+    }
     return utxos.filter((u) => {
       const lovelaceAmount = u.output.amount.find((a: any) => a.unit === "lovelace")?.quantity;
       return Number(lovelaceAmount) > lovelace;
     });
   };
 
-  const getUtxosWithToken = async (assetHex: string) => {
-    const utxos = await maestro.fetchAddressUTxOs(walletAddress);
+  const getUtxosWithToken = async (assetHex: string, userUtxos: UTxO[] = []) => {
+    let utxos: UTxO[];
+    if (userUtxos.length === 0) {
+      utxos = await maestro.fetchAddressUTxOs(walletAddress);
+    } else {
+      utxos = userUtxos;
+    }
     return utxos.filter((u) => {
       const assetAmount = u.output.amount.find((a: any) => a.unit === assetHex)?.quantity;
       return Number(assetAmount) >= 1;
@@ -82,7 +92,7 @@ export default function Admin() {
   const mesh = new MeshTxBuilder({
     fetcher: maestro,
     submitter: maestro,
-    // evaluator: maestro,
+    evaluator: maestro,
   });
 
   const txParams: [MeshTxBuilder, IFetcher, TxConstants] = [
@@ -186,10 +196,27 @@ export default function Admin() {
   };
 
   const updateContent = async () => {
-    const utxo = await getUtxosWithMinLovelace(20000000);
-    const txHash = utxo[0].input.txHash;
-    const txId = utxo[0].input.outputIndex;
-    const txBody = await user.updateContent(txHash, txId, 1);
+    const allUtxos = await wallet.getUtxos();
+    const collateralUtxo = await wallet.getCollateral();
+    const usedAddresses = await wallet.getUsedAddresses();
+    const unusedAddress = await wallet.getUnusedAddresses();
+    const utxo = await getUtxosWithMinLovelace(20000000, allUtxos);
+    const ownerTokenUtxo = await getUtxosWithToken(
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      allUtxos
+    );
+    const updateContentParams: UpdateContent = {
+      feeUtxo: utxo[0],
+      ownerTokenUtxo: ownerTokenUtxo[0],
+      collateralUtxo: collateralUtxo[0],
+      walletAddress: [...usedAddresses, ...unusedAddress][0],
+      registryNumber: 0,
+      newContentHashHex: "aaaabbbb",
+      contentNumber: 0,
+    };
+    console.log(`Update Content Params`, updateContentParams);
+
+    const txBody = await user.updateContent(updateContentParams);
     const signedTx = await wallet.signTx(txBody, true);
     const confirmTxHash = await maestro.submitTx(signedTx);
     console.log("TxHash", confirmTxHash);

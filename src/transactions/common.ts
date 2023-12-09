@@ -15,15 +15,21 @@ import { OracleDatum } from "./type";
 export type InputUTxO = UTxO["input"];
 
 export const refScriptsAddress = process.env.NEXT_PUBLIC_REF_SCRIPTS_ADDR!;
-export const [oracleValidatorRefTxHash, oracleValidatorRefTxId] =
-  process.env.NEXT_PUBLIC_ORACLE_VALIDATOR_REF_UTXO!.split("#");
-export const [contentTokenRefTxHash, contentTokenRefTxId] = process.env.NEXT_PUBLIC_CONTENT_TOKEN_REF_UTXO!.split("#");
-export const [ownershipTokenRefTxHash, ownershipTokenRefTxId] =
-  process.env.NEXT_PUBLIC_OWNERSHIP_TOKEN_REF_UTXO!.split("#");
-export const [contentRegistryRefTxHash, contentRegistryRefTxId] =
-  process.env.NEXT_PUBLIC_CONTENT_REGISTRY_REF_UTXO!.split("#");
-export const [ownershipRegistryRefTxHash, ownershipRegistryRefTxId] =
-  process.env.NEXT_PUBLIC_OWNERSHIP_REGISTRY_REF_UTXO!.split("#");
+const oracleRefUtxo = process.env.NEXT_PUBLIC_ORACLE_VALIDATOR_REF_UTXO!.split("#");
+export const oracleValidatorRefTxHash = oracleRefUtxo[0];
+export const oracleValidatorRefTxId = Number(oracleRefUtxo[1]);
+const contentTokenRefUtxo = process.env.NEXT_PUBLIC_CONTENT_TOKEN_REF_UTXO!.split("#");
+export const contentTokenRefTxHash = contentTokenRefUtxo[0];
+export const contentTokenRefTxId = Number(contentTokenRefUtxo[1]);
+const ownershipTokenRefUtxo = process.env.NEXT_PUBLIC_OWNERSHIP_TOKEN_REF_UTXO!.split("#");
+export const ownershipTokenRefTxHash = ownershipTokenRefUtxo[0];
+export const ownershipTokenRefTxId = Number(ownershipTokenRefUtxo[1]);
+const contentRegistryRefUtxo = process.env.NEXT_PUBLIC_CONTENT_REGISTRY_REF_UTXO!.split("#");
+export const contentRegistryRefTxHash = contentRegistryRefUtxo[0];
+export const contentRegistryRefTxId = Number(contentRegistryRefUtxo[1]);
+const ownershipRegistryRefUtxo = process.env.NEXT_PUBLIC_OWNERSHIP_REGISTRY_REF_UTXO!.split("#");
+export const ownershipRegistryRefTxHash = ownershipRegistryRefUtxo[0];
+export const ownershipRegistryRefTxId = Number(ownershipRegistryRefUtxo[1]);
 export const operationAddress = process.env.NEXT_PUBLIC_WALLET_ADDRESS!;
 export const oraclePolicyId = process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!;
 

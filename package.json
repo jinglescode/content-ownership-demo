@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@emurgo/cardano-serialization-lib-browser": "^11.5.0",
-    "@meshsdk/core": "1.5.11-beta.2",
+    "@meshsdk/core": "1.5.11-beta.3",
     "@meshsdk/react": "^1.1.7",
     "@sidan-lab/sidan-csl": "^0.1.13",
     "multihashes": "^4.0.3",
