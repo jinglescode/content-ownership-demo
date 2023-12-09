@@ -9,6 +9,7 @@ import {
   serializeBech32Address,
   v2ScriptHashToBech32,
   parseInlineDatum,
+  stringToHex,
 } from "@sidan-lab/sidan-csl";
 import { OracleDatum } from "./type";
 
@@ -176,5 +177,27 @@ export class MeshTxInitiator {
 
   protected getOwnershipDatum = (ownershipArray: [string, string][]) => {
     return mConStr0([ownershipArray.length, ownershipArray]);
+  };
+
+  protected getScriptUtxos = async (
+    registryNumber: number,
+    toFetch: ("oracle" | "content" | "ownership")[] = ["oracle", "content", "ownership"]
+  ) => {
+    const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    const promises: Promise<UTxO[]>[] = [];
+    toFetch.forEach((script) => {
+      switch (script) {
+        case "oracle":
+          promises.push(this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId));
+          break;
+        case "content":
+          promises.push(this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex));
+        case "ownership":
+          promises.push(this.fetcher.fetchAddressUTxOs(ownershipAddress, ownershipPolicyId + registryTokenNameHex));
+          break;
+      }
+    });
+    const scriptsInput = await Promise.all(promises);
+    return scriptsInput.map((utxos) => utxos[0]);
   };
 }

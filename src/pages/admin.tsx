@@ -2,7 +2,7 @@ import { InfuraProvider, MaestroProvider, MeshTxBuilder, IFetcher, UTxO } from "
 import { AdminAction, ScriptsSetup } from "@/transactions";
 import { useWallet } from "@meshsdk/react";
 import { TxConstants, oraclePolicyId } from "@/transactions/common";
-import { UpdateContent, UserAction } from "@/transactions/user";
+import { TransferContent, UpdateContent, UserAction } from "@/transactions/user";
 import { mConStr0 } from "@sidan-lab/sidan-csl";
 import multihashes from "multihashes";
 import { toPlutusData } from "@/aiken";
@@ -223,10 +223,25 @@ export default function Admin() {
   };
 
   const transferContent = async () => {
-    const utxo = await getUtxosWithMinLovelace(20000000);
-    const txHash = utxo[0].input.txHash;
-    const txId = utxo[0].input.outputIndex;
-    const txBody = await user.transferContent(txHash, txId, 1);
+    const allUtxos = await wallet.getUtxos();
+    const collateralUtxo = await wallet.getCollateral();
+    const usedAddresses = await wallet.getUsedAddresses();
+    const unusedAddress = await wallet.getUnusedAddresses();
+    const utxo = await getUtxosWithMinLovelace(20000000, allUtxos);
+    const ownerTokenUtxo = await getUtxosWithToken(
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      allUtxos
+    );
+    const updateContentParams: TransferContent = {
+      feeUtxo: utxo[0],
+      ownerTokenUtxo: ownerTokenUtxo[0],
+      collateralUtxo: collateralUtxo[0],
+      walletAddress: [...usedAddresses, ...unusedAddress][0],
+      registryNumber: 0,
+      newOwnerAssetHex: "fc0e0323b254c0eb7275349d1e32eb6cc7ecfd03f3b71408eb46d75168696e736f6e2e616461",
+      contentNumber: 0,
+    };
+    const txBody = await user.transferContent(updateContentParams);
     const signedTx = await wallet.signTx(txBody, true);
     const confirmTxHash = await maestro.submitTx(signedTx);
     console.log("TxHash", confirmTxHash);

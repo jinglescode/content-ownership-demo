@@ -10,14 +10,12 @@ import {
   getScriptHash,
   oracleAddress,
   oraclePolicyId,
-  oracleValidatorRefTxHash,
-  oracleValidatorRefTxId,
   ownershipAddress,
   ownershipPolicyId,
   ownershipRegistryRefTxHash,
   ownershipRegistryRefTxId,
 } from "./common";
-import { BuiltinByteString, mConStr, parseInlineDatum, stringToHex } from "@sidan-lab/sidan-csl";
+import { mConStr, parseInlineDatum, stringToHex } from "@sidan-lab/sidan-csl";
 import { ContentRegistryDatum, OwnershipRegistryDatum } from "./type";
 
 export type UpdateContent = {
@@ -27,6 +25,16 @@ export type UpdateContent = {
   walletAddress: string;
   registryNumber: number;
   newContentHashHex: string;
+  contentNumber: number;
+};
+
+export type TransferContent = {
+  feeUtxo: UTxO;
+  ownerTokenUtxo: UTxO;
+  collateralUtxo: UTxO;
+  walletAddress: string;
+  registryNumber: number;
+  newOwnerAssetHex: string;
   contentNumber: number;
 };
 
@@ -64,11 +72,7 @@ export class UserAction extends MeshTxInitiator {
       .txIn(ownershipTxHash, ownershipTxId)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(0, []))
-      .spendingTxInReference(
-        ownershipRegistryRefTxHash,
-        Number(ownershipRegistryRefTxId),
-        getScriptHash("OwnershipRegistry")
-      )
+      .spendingTxInReference(ownershipRegistryRefTxHash, ownershipRegistryRefTxId, getScriptHash("OwnershipRegistry"))
       .txOut(ownershipAddress, [{ unit: ownershipPolicyId + registryName, quantity: "1" }])
       .txOutInlineDatumValue(newOwnershipRegistry)
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
@@ -89,83 +93,62 @@ export class UserAction extends MeshTxInitiator {
     contentNumber,
   }: UpdateContent) => {
     const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
-
-    const contentUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(
-      contentAddress,
-      contentPolicyId + registryTokenNameHex
-    );
-    const ownershipUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(
-      ownershipAddress,
-      ownershipPolicyId + registryTokenNameHex
-    );
-    const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
-    console.log("Content", contentUtxo);
-    console.log("Ownership", ownershipUtxo);
-    console.log("Oracle", oracleUtxo);
-    const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
-    const { txHash: contentTxHash, outputIndex: contentTxId } = contentUtxo[0].input;
-    const { txHash: ownershipTxHash, outputIndex: ownershipTxId } = ownershipUtxo[0].input;
-    const newContentRegistry = this.updateContentRegistry(
-      contentUtxo[0].output.plutusData!,
-      contentNumber,
-      newContentHashHex
-    );
-
-    console.log("Content In", contentTxHash, contentTxId);
+    const [oracle, content, ownership] = await this.getScriptUtxos(registryNumber);
+    const newContentRegistry = this.updateContentRegistry(content.output.plutusData!, contentNumber, newContentHashHex);
 
     await this.mesh
-      // .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex, feeUtxo.output.amount, walletAddress)
-      // .txIn(ownerTokenUtxo.input.txHash, ownerTokenUtxo.input.outputIndex, ownerTokenUtxo.output.amount, walletAddress)
       .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex)
       .txIn(ownerTokenUtxo.input.txHash, ownerTokenUtxo.input.outputIndex)
       .spendingPlutusScriptV2()
-      .txIn(contentTxHash, contentTxId)
+      .txIn(content.input.txHash, content.input.outputIndex)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(1, [newContentHashHex, contentNumber]))
       .spendingTxInReference(contentRegistryRefTxHash, contentRegistryRefTxId)
       .txOut(contentAddress, [{ unit: contentPolicyId + registryTokenNameHex, quantity: "1" }])
       .txOutInlineDatumValue(newContentRegistry)
-      .readOnlyTxInReference(oracleTxHash, oracleTxId)
-      .readOnlyTxInReference(ownershipTxHash, ownershipTxId)
+      .readOnlyTxInReference(oracle.input.txHash, oracle.input.outputIndex)
+      .readOnlyTxInReference(ownership.input.txHash, ownership.input.outputIndex)
       .changeAddress(walletAddress)
-      // .txInCollateral(
-      //   collateralUtxo.input.txHash,
-      //   collateralUtxo.input.outputIndex,
-      //   feeUtxo.output.amount,
-      //   walletAddress
-      // )
       .txInCollateral(collateralUtxo.input.txHash, collateralUtxo.input.outputIndex)
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;
   };
 
-  transferContent = async (txInHash: string, txInId: number, registryNumber: number) => {
-    // TODO
-    // const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
-    // const scriptUtxos = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryTokenNameHex);
-    // const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
-    // const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
-    // const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
-    // await this.mesh
-    //   .txIn(txInHash, txInId)
-    //   .spendingPlutusScriptV2()
-    //   .txIn(validatorTxHash, validatorTxId)
-    //   .txInInlineDatumPresent()
-    //   .txInRedeemerValue(mConStr(2, []))
-    //   .txInScript(getScriptCbor("ContentRegistry"))
-    //   .mintPlutusScriptV2()
-    //   .mint(-1, contentPolicyId, registryTokenNameHex)
-    //   .mintTxInReference(contentTokenRefTxHash, Number(contentTokenRefTxId))
-    //   .mintRedeemerValue(mConStr1([]))
-    //   .readOnlyTxInReference(oracleTxHash, oracleTxId)
-    //   .changeAddress(this.constants.walletAddress)
-    //   .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
-    //   .requiredSignerHash(stopKey)
-    //   .signingKey(this.constants.skey)
-    //   .complete();
-    // const txBody = this.mesh.completeSigning();
-    return "";
+  transferContent = async ({
+    feeUtxo,
+    ownerTokenUtxo,
+    collateralUtxo,
+    walletAddress,
+    registryNumber,
+    newOwnerAssetHex,
+    contentNumber,
+  }: TransferContent) => {
+    const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
+    const [oracle, ownership] = await this.getScriptUtxos(registryNumber, ["oracle", "ownership"]);
+    const newOwnerAssetClass: [string, string] = [newOwnerAssetHex.slice(0, 56), newOwnerAssetHex.slice(56)];
+    const newOwnershipRegistry = this.updateOwnershipRegistry(
+      ownership.output.plutusData!,
+      contentNumber,
+      newOwnerAssetClass
+    );
+
+    await this.mesh
+      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex)
+      .txIn(ownerTokenUtxo.input.txHash, ownerTokenUtxo.input.outputIndex)
+      .spendingPlutusScriptV2()
+      .txIn(ownership.input.txHash, ownership.input.outputIndex)
+      .txInInlineDatumPresent()
+      .txInRedeemerValue(mConStr(1, [newOwnerAssetClass, contentNumber]))
+      .spendingTxInReference(ownershipRegistryRefTxHash, ownershipRegistryRefTxId)
+      .txOut(ownershipAddress, [{ unit: ownershipPolicyId + registryTokenNameHex, quantity: "1" }])
+      .txOutInlineDatumValue(newOwnershipRegistry)
+      .readOnlyTxInReference(oracle.input.txHash, oracle.input.outputIndex)
+      .changeAddress(walletAddress)
+      .txInCollateral(collateralUtxo.input.txHash, collateralUtxo.input.outputIndex)
+      .complete();
+    const txBody = this.mesh.completeSigning();
+    return txBody;
   };
 
   private insertContentRegistry = (plutusData: string, newContentHash: string): Data => {
@@ -196,14 +179,19 @@ export class UserAction extends MeshTxInitiator {
     return newContentRegistry;
   };
 
-  private updateOwnershipRegistry = (plutusData: string, ownerAssetClass: [string, string]): Data => {
+  private updateOwnershipRegistry = (
+    plutusData: string,
+    contentNumber: number,
+    ownerAssetClass: [string, string]
+  ): Data => {
     const ownershipRegistry = parseInlineDatum<any, OwnershipRegistryDatum>({
       inline_datum: plutusData,
     }).fields[1].list.map((plutusBytesArray): [string, string] => [
       plutusBytesArray.list[0].bytes,
       plutusBytesArray.list[1].bytes,
     ]);
-    const newContentRegistry = this.getOwnershipDatum([...ownershipRegistry, ownerAssetClass]);
+    ownershipRegistry[contentNumber] = ownerAssetClass;
+    const newContentRegistry = this.getOwnershipDatum(ownershipRegistry);
     return newContentRegistry;
   };
 }
