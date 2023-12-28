@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
     "@emurgo/cardano-serialization-lib-browser": "^11.5.0",
     "@meshsdk/core": "1.5.11-beta.3",
     "@meshsdk/react": "^1.1.7",
+    "@mui/material": "^5.15.2",
     "@reduxjs/toolkit": "^2.0.1",
     "@sidan-lab/sidan-csl": "^0.1.13",
     "multihashes": "^4.0.3",
