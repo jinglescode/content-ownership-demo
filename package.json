@@ -12,11 +12,13 @@
     "@emurgo/cardano-serialization-lib-browser": "^11.5.0",
     "@meshsdk/core": "1.5.11-beta.3",
     "@meshsdk/react": "^1.1.7",
+    "@reduxjs/toolkit": "^2.0.1",
     "@sidan-lab/sidan-csl": "^0.1.13",
     "multihashes": "^4.0.3",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "redux": "^5.0.1"
   },
   "devDependencies": {
     "@types/node": "latest",
