@@ -1,3 +1,6 @@
+import { maestro, parseContentRegistry, parseOwnershipRegistry, InfuraDownloader } from "@/backend";
+import { MeshTxInitiator } from "@/transactions/common";
+import { MeshTxBuilder } from "@meshsdk/core";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 type Content = {
@@ -13,26 +16,47 @@ type Data =
       error: string;
     };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   // API 3: GET /api/get-content/:id
   // Get content by id
   try {
     if (req.method === "GET") {
       const pathParams = req.query.slug as string[];
-      const contentId = pathParams[0];
-      console.log("Content Id", contentId);
+      const [registryId, contentId] = pathParams[0].split("-");
 
-      // Query both registries on current id
+      const mesh = new MeshTxBuilder({ fetcher: maestro, submitter: maestro });
+      const initiator = new MeshTxInitiator(mesh, maestro, {
+        collateralUTxO: { input: { txHash: "", outputIndex: 0 }, output: { address: "", amount: [] } },
+        walletAddress: "",
+      });
 
       // Get the ownerAssetHex and contentHashHex
+      const [contentRegistry, ownershipRegistry] = await initiator.getScriptUtxos(Number(registryId), [
+        "content",
+        "ownership",
+      ]);
+      const contentArray = parseContentRegistry(contentRegistry.output.plutusData as string);
+      const ownershipArray = parseOwnershipRegistry(ownershipRegistry.output.plutusData as string);
+      console.log(contentArray, ownershipArray);
 
       // Resolve content from IPFS
 
-      // Return the content
+      const completeContent: Content = {
+        registryNumber: Number(registryId),
+        contentHashHex: contentArray[Number(contentId)],
+        ownerAssetHex: ownershipArray[Number(contentId)],
+        content: "",
+      };
+      await new InfuraDownloader()
+        .downloadContent(contentArray[Number(contentId)])
+        .then((content) => {
+          completeContent.content = content.data;
+        })
+        .catch((error) => {
+          console.log("No IPFS content resolved for contentItem: ", contentArray[Number(contentId)]);
+        });
 
-      res
-        .status(200)
-        .json({ registryNumber: 1, contentHashHex: "0x123", ownerAssetHex: "0x123", content: "Hello World" });
+      res.status(200).json(completeContent);
     } else {
       res.status(405).json({ error: "Method Not Allowed" });
     }
