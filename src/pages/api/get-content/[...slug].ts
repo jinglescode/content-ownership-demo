@@ -1,4 +1,10 @@
-import { maestro, parseContentRegistry, parseOwnershipRegistry, InfuraDownloader } from "@/backend";
+import {
+  maestro,
+  parseContentRegistry,
+  parseOwnershipRegistry,
+  InfuraDownloader,
+  decodeOnchainRecord,
+} from "@/backend";
 import { MeshTxInitiator } from "@/transactions/common";
 import { MeshTxBuilder } from "@meshsdk/core";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -45,12 +51,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         registryNumber: Number(registryId),
         contentHashHex: contentArray[Number(contentId)],
         ownerAssetHex: ownershipArray[Number(contentId)],
-        content: "",
+        content: {},
       };
       await new InfuraDownloader()
         .downloadContent(contentArray[Number(contentId)])
         .then((content) => {
-          completeContent.content = content.data;
+          const jsonStart = content.data.indexOf("{");
+          const jsonEnd = content.data.lastIndexOf("}");
+          const json = content.data.substring(jsonStart, jsonEnd + 1);
+          completeContent.content = JSON.parse(json);
         })
         .catch((error) => {
           console.log("No IPFS content resolved for contentItem: ", contentArray[Number(contentId)]);

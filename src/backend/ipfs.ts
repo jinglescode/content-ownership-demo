@@ -1,9 +1,9 @@
 import { infura } from "./providers";
 import multihashes from "multihashes";
 
-export const uploadMarkdown = async (content: any) => {
-  const blob = new Blob([content], {
-    type: "text/markdown",
+export const uploadMarkdown = async <T extends object>(content: T) => {
+  const blob = new Blob([JSON.stringify(content)], {
+    type: "application/json",
   });
   let formData = new FormData();
   formData.append("blob", blob, "test.md");

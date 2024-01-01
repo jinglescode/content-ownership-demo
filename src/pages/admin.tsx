@@ -24,19 +24,16 @@ export default function Admin() {
   const { connect, connected, wallet } = useWallet();
 
   async function uploadMarkdown() {
-    const content = "---\ntitle: Hello World\n---\n\n# Hello World\n\nThis is my first post!";
+    const content = { title: "Hello World", content: "Hello World\n\nThis is my first post!" };
 
-    const blob = new Blob([content], {
-      type: "text/markdown",
+    const blob = new Blob([JSON.stringify(content)], {
+      type: "application/json",
     });
 
     let formData = new FormData();
     formData.append("blob", blob, "test.md");
 
     const res: any = await infura.uploadContent(formData);
-    // {Hash: "QmfYKhKUo3guDQyATYyTuzokkPXaeMqNro73P6iCJEmGAj",
-    // Name: "test.md",
-    // Size: "73",}
     const ipfsHash: string = res.Hash;
 
     const ipfsContentBytes = multihashes.fromB58String(ipfsHash);

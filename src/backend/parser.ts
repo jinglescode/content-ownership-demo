@@ -2,7 +2,7 @@ import { ContentRegistryDatum, OwnershipRegistryDatum } from "@/transactions/typ
 import { parseInlineDatum } from "@sidan-lab/sidan-csl";
 import multihashes from "multihashes";
 
-const decodeOnchainRecord = (hexString: string) => {
+export const decodeOnchainRecord = (hexString: string) => {
   const decodedBytes = Buffer.from("1220" + hexString, "hex");
   const decodedIpfsHash = multihashes.toB58String(decodedBytes);
   return decodedIpfsHash;

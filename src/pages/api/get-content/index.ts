@@ -52,7 +52,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           new InfuraDownloader()
             .downloadContent(contentItem)
             .then((content) => {
-              completeContent.content = content.data;
+              const jsonStart = content.data.indexOf("{");
+              const jsonEnd = content.data.lastIndexOf("}");
+              const json = content.data.substring(jsonStart, jsonEnd + 1);
+              completeContent.content = JSON.parse(json);
             })
             .catch((error) => {
               console.log("No IPFS content resolved for contentItem: ", contentItem);
