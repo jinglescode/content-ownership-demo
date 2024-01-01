@@ -8,22 +8,19 @@ type Content = {
 };
 
 type Data =
-  | Content[]
   | Content
   | {
       error: string;
     };
 
 export default function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+  // API 3: GET /api/get-content/:id
+  // Get content by id
   try {
     if (req.method === "GET") {
-      // API 2: GET /api/get-content
-      // Get all content
-      // Response: Content[]
-
-      // API 3: GET /api/get-content/:id
-      // Get content by id
-      // Response: Content
+      const pathParams = req.query.slug as string[];
+      const contentId = pathParams[0];
+      console.log("Content Id", contentId);
 
       // Query both registries (do filter if have id)
 
@@ -33,7 +30,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Data>)
 
       // Return the content
 
-      res.status(200).json([]);
+      res
+        .status(200)
+        .json({ registryNumber: 1, contentHashHex: "0x123", ownerAssetHex: "0x123", content: "Hello World" });
     } else {
       res.status(405).json({ error: "Method Not Allowed" });
     }
