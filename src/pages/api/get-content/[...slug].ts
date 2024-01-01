@@ -22,7 +22,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Data>)
       const contentId = pathParams[0];
       console.log("Content Id", contentId);
 
-      // Query both registries (do filter if have id)
+      // Query both registries on current id
 
       // Get the ownerAssetHex and contentHashHex
 

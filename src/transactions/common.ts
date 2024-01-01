@@ -179,7 +179,7 @@ export class MeshTxInitiator {
     return mConStr0([ownershipArray.length, ownershipArray]);
   };
 
-  protected getScriptUtxos = async (
+  getScriptUtxos = async (
     registryNumber: number,
     toFetch: ("oracle" | "content" | "ownership")[] = ["oracle", "content", "ownership"]
   ) => {
