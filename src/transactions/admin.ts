@@ -29,6 +29,7 @@ export class AdminAction extends MeshTxInitiator {
     const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
     const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
+    const { input, output } = this.constants.collateralUTxO;
 
     await this.mesh
       .txIn(txInHash, txInId)
@@ -43,9 +44,9 @@ export class AdminAction extends MeshTxInitiator {
       .mintRedeemerValue(mConStr1([]))
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
       .changeAddress(this.constants.walletAddress)
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .requiredSignerHash(stopKey)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;
@@ -60,6 +61,7 @@ export class AdminAction extends MeshTxInitiator {
     const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
     const { txHash: validatorTxHash, outputIndex: validatorTxId } = scriptUtxos[0].input;
+    const { input, output } = this.constants.collateralUTxO;
 
     await this.mesh
       .txIn(txInHash, txInId)
@@ -74,9 +76,9 @@ export class AdminAction extends MeshTxInitiator {
       .mintRedeemerValue(mConStr1([]))
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
       .changeAddress(this.constants.walletAddress)
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .requiredSignerHash(stopKey)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;
@@ -85,6 +87,7 @@ export class AdminAction extends MeshTxInitiator {
   stopOracle = async (txInHash: string, txInId: number) => {
     const oracleUtxo = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
     const { txHash, outputIndex } = oracleUtxo[0].input;
+    const { input, output } = this.constants.collateralUTxO;
 
     await this.mesh
       .txIn(txInHash, txInId)
@@ -98,10 +101,11 @@ export class AdminAction extends MeshTxInitiator {
       .mintingScript(getScriptCbor("OracleNFT"))
       .mintRedeemerValue(mConStr1([]))
       .changeAddress(this.constants.walletAddress)
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .changeAddress(this.constants.walletAddress)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .requiredSignerHash(opsKey)
       .requiredSignerHash(stopKey)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;

@@ -36,6 +36,7 @@ export class ScriptsSetup extends MeshTxInitiator {
     const paramScript = applyParamsToScript(script, { type: "Mesh", params: [param] });
     const policyId = getV2ScriptHash(paramScript);
     const tokenName = "";
+    const { input, output } = this.constants.collateralUTxO;
 
     await this.mesh
       .txIn(paramTxHash, paramTxId)
@@ -44,9 +45,9 @@ export class ScriptsSetup extends MeshTxInitiator {
       .mint(1, policyId, tokenName)
       .mintingScript(paramScript)
       .mintRedeemerValue(mConStr0([]))
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .changeAddress(this.constants.walletAddress)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
     const txHash = await this.signSubmitReset();
     return txHash;
@@ -59,7 +60,7 @@ export class ScriptsSetup extends MeshTxInitiator {
       .txOut(refScriptsAddress, [])
       .txOutReferenceScript(scriptCbor)
       .changeAddress(this.constants.walletAddress)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
     const txHash = await this.signSubmitReset();
     return txHash;
@@ -73,7 +74,7 @@ export class ScriptsSetup extends MeshTxInitiator {
       .txOut(oracleAddress, [{ unit: oraclePolicyId + "", quantity: "1" }])
       .txOutInlineDatumValue(datumValue)
       .changeAddress(this.constants.walletAddress)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
 
     const txHash = await this.signSubmitReset();
@@ -88,6 +89,7 @@ export class ScriptsSetup extends MeshTxInitiator {
     const contentTokenName = stringToHex(`Registry (${contentNumber})`);
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = scriptUtxo[0].input;
     const oracleDatumValue = this.getOracleDatum(contentNumber + 1, ownershipNumber);
+    const { input, output } = this.constants.collateralUTxO;
     console.log("Oracle Datum", oracleDatumValue);
 
     await this.mesh
@@ -105,9 +107,9 @@ export class ScriptsSetup extends MeshTxInitiator {
       .mint(1, contentPolicyId, contentTokenName)
       .mintTxInReference(contentTokenRefTxHash, contentTokenRefTxId)
       .mintRedeemerValue(mConStr0([]))
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .changeAddress(this.constants.walletAddress)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
 
     const txHash = await this.signSubmitReset();
@@ -122,6 +124,7 @@ export class ScriptsSetup extends MeshTxInitiator {
     const ownershipTokenName = stringToHex(`Registry (${ownershipNumber})`);
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = scriptUtxo[0].input;
     const oracleDatumValue = this.getOracleDatum(contentNumber, ownershipNumber + 1);
+    const { input, output } = this.constants.collateralUTxO;
     console.log("Oracle Datum", oracleDatumValue);
 
     await this.mesh
@@ -139,9 +142,9 @@ export class ScriptsSetup extends MeshTxInitiator {
       .mint(1, ownershipPolicyId, ownershipTokenName)
       .mintTxInReference(ownershipTokenRefTxHash, ownershipTokenRefTxId)
       .mintRedeemerValue(mConStr0([]))
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex)
+      .txInCollateral(input.txHash, input.outputIndex, output.amount, output.address)
       .changeAddress(this.constants.walletAddress)
-      .signingKey(this.constants.skey)
+      .signingKey(this.constants.skey!)
       .complete();
 
     const txHash = await this.signSubmitReset();

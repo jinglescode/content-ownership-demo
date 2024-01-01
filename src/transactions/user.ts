@@ -21,7 +21,6 @@ import { ContentRegistryDatum, OwnershipRegistryDatum } from "./type";
 export type UpdateContent = {
   feeUtxo: UTxO;
   ownerTokenUtxo: UTxO;
-  collateralUtxo: UTxO;
   walletAddress: string;
   registryNumber: number;
   newContentHashHex: string;
@@ -44,7 +43,7 @@ export class UserAction extends MeshTxInitiator {
   }
 
   // TODO: Input user's address
-  createContent = async (feeUtxo: InputUTxO, ownerAssetHex: string, contentHashHex: string, registryNumber = 0) => {
+  createContent = async (feeUtxo: UTxO, ownerAssetHex: string, contentHashHex: string, registryNumber = 0) => {
     const registryName = stringToHex(`Registry (${registryNumber})`);
     const oracleUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(oracleAddress, oraclePolicyId);
     const contentUtxo: UTxO[] = await this.fetcher.fetchAddressUTxOs(contentAddress, contentPolicyId + registryName);
@@ -53,16 +52,20 @@ export class UserAction extends MeshTxInitiator {
       ownershipPolicyId + registryName
     );
     const { txHash: oracleTxHash, outputIndex: oracleTxId } = oracleUtxo[0].input;
-    const { txHash: contentTxHash, outputIndex: contentTxId } = contentUtxo[0].input;
+    const {
+      input: { txHash: contentTxHash, outputIndex: contentTxId },
+      output: { address: _contentAddress, amount: contentAmount },
+    } = contentUtxo[0];
     const { txHash: ownershipTxHash, outputIndex: ownershipTxId } = ownershipUtxo[0].input;
     const ownerAssetClass: [string, string] = [ownerAssetHex.slice(0, 56), ownerAssetHex.slice(56)];
     const newContentRegistry = this.insertContentRegistry(contentUtxo[0].output.plutusData!, contentHashHex);
     const newOwnershipRegistry = this.insertOwnershipRegistry(ownershipUtxo[0].output.plutusData!, ownerAssetClass);
+    const { input: collateralInput, output: collateralOutput } = this.constants.collateralUTxO;
 
     await this.mesh
-      .txIn(feeUtxo.txHash, feeUtxo.outputIndex)
+      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex, feeUtxo.output.amount, feeUtxo.output.address)
       .spendingPlutusScriptV2()
-      .txIn(contentTxHash, contentTxId)
+      .txIn(contentTxHash, contentTxId, contentAmount, contentAddress)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(0, [contentHashHex, ownerAssetClass]))
       .spendingTxInReference(contentRegistryRefTxHash, contentRegistryRefTxId, getScriptHash("ContentRegistry"))
@@ -76,8 +79,13 @@ export class UserAction extends MeshTxInitiator {
       .txOut(ownershipAddress, [{ unit: ownershipPolicyId + registryName, quantity: "1" }])
       .txOutInlineDatumValue(newOwnershipRegistry)
       .readOnlyTxInReference(oracleTxHash, oracleTxId)
-      .changeAddress(this.constants.walletAddress) // TODO: Change to user's address
-      .txInCollateral(this.constants.collateralUTxO.txHash, this.constants.collateralUTxO.outputIndex) // TODO: Change to user's address
+      .changeAddress(this.constants.walletAddress)
+      .txInCollateral(
+        collateralInput.txHash,
+        collateralInput.outputIndex,
+        collateralOutput.amount,
+        collateralOutput.address
+      )
       .complete();
     const txHex = this.mesh.completeSigning();
     return txHex;
@@ -86,7 +94,6 @@ export class UserAction extends MeshTxInitiator {
   updateContent = async ({
     feeUtxo,
     ownerTokenUtxo,
-    collateralUtxo,
     walletAddress,
     registryNumber,
     newContentHashHex,
@@ -95,12 +102,18 @@ export class UserAction extends MeshTxInitiator {
     const registryTokenNameHex = stringToHex(`Registry (${registryNumber})`);
     const [oracle, content, ownership] = await this.getScriptUtxos(registryNumber);
     const newContentRegistry = this.updateContentRegistry(content.output.plutusData!, contentNumber, newContentHashHex);
+    const { input: collateralInput, output: collateralOutput } = this.constants.collateralUTxO;
 
     await this.mesh
-      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex)
-      .txIn(ownerTokenUtxo.input.txHash, ownerTokenUtxo.input.outputIndex)
+      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex, feeUtxo.output.amount, feeUtxo.output.address)
+      .txIn(
+        ownerTokenUtxo.input.txHash,
+        ownerTokenUtxo.input.outputIndex,
+        ownerTokenUtxo.output.amount,
+        ownerTokenUtxo.output.address
+      )
       .spendingPlutusScriptV2()
-      .txIn(content.input.txHash, content.input.outputIndex)
+      .txIn(content.input.txHash, content.input.outputIndex, content.output.amount, content.output.address)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(1, [newContentHashHex, contentNumber]))
       .spendingTxInReference(contentRegistryRefTxHash, contentRegistryRefTxId)
@@ -109,7 +122,12 @@ export class UserAction extends MeshTxInitiator {
       .readOnlyTxInReference(oracle.input.txHash, oracle.input.outputIndex)
       .readOnlyTxInReference(ownership.input.txHash, ownership.input.outputIndex)
       .changeAddress(walletAddress)
-      .txInCollateral(collateralUtxo.input.txHash, collateralUtxo.input.outputIndex)
+      .txInCollateral(
+        collateralInput.txHash,
+        collateralInput.outputIndex,
+        collateralOutput.amount,
+        collateralOutput.address
+      )
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;
@@ -118,7 +136,6 @@ export class UserAction extends MeshTxInitiator {
   transferContent = async ({
     feeUtxo,
     ownerTokenUtxo,
-    collateralUtxo,
     walletAddress,
     registryNumber,
     newOwnerAssetHex,
@@ -132,12 +149,18 @@ export class UserAction extends MeshTxInitiator {
       contentNumber,
       newOwnerAssetClass
     );
+    const { input: collateralInput, output: collateralOutput } = this.constants.collateralUTxO;
 
     await this.mesh
-      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex)
-      .txIn(ownerTokenUtxo.input.txHash, ownerTokenUtxo.input.outputIndex)
+      .txIn(feeUtxo.input.txHash, feeUtxo.input.outputIndex, feeUtxo.output.amount, feeUtxo.output.address)
+      .txIn(
+        ownerTokenUtxo.input.txHash,
+        ownerTokenUtxo.input.outputIndex,
+        ownerTokenUtxo.output.amount,
+        ownerTokenUtxo.output.address
+      )
       .spendingPlutusScriptV2()
-      .txIn(ownership.input.txHash, ownership.input.outputIndex)
+      .txIn(ownership.input.txHash, ownership.input.outputIndex, ownership.output.amount, ownership.output.address)
       .txInInlineDatumPresent()
       .txInRedeemerValue(mConStr(1, [newOwnerAssetClass, contentNumber]))
       .spendingTxInReference(ownershipRegistryRefTxHash, ownershipRegistryRefTxId)
@@ -145,7 +168,12 @@ export class UserAction extends MeshTxInitiator {
       .txOutInlineDatumValue(newOwnershipRegistry)
       .readOnlyTxInReference(oracle.input.txHash, oracle.input.outputIndex)
       .changeAddress(walletAddress)
-      .txInCollateral(collateralUtxo.input.txHash, collateralUtxo.input.outputIndex)
+      .txInCollateral(
+        collateralInput.txHash,
+        collateralInput.outputIndex,
+        collateralOutput.amount,
+        collateralOutput.address
+      )
       .complete();
     const txBody = this.mesh.completeSigning();
     return txBody;
