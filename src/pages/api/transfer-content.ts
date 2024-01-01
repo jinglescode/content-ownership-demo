@@ -1,4 +1,3 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { maestro } from "@/backend";
 import { UserAction } from "@/transactions/user";
 import { MeshTxBuilder, UTxO } from "@meshsdk/core";

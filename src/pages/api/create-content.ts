@@ -1,8 +1,6 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { InfuraProvider, MeshTxBuilder, UTxO } from "@meshsdk/core";
+import { MeshTxBuilder, UTxO } from "@meshsdk/core";
 import type { NextApiRequest, NextApiResponse } from "next";
-import multihashes from "multihashes";
-import { infura, maestro } from "../../backend";
+import { maestro, uploadMarkdown } from "../../backend";
 import { UserAction } from "@/transactions/user";
 
 type Data =
@@ -20,20 +18,6 @@ type Body = {
   ownerAssetHex: string;
   registryNumber: number;
   content: any;
-};
-
-const uploadMarkdown = async (content: any) => {
-  const blob = new Blob([content], {
-    type: "text/markdown",
-  });
-  let formData = new FormData();
-  formData.append("blob", blob, "test.md");
-  const res: any = await infura.uploadContent(formData);
-  const ipfsHash: string = res.Hash;
-  const ipfsContentBytes = multihashes.fromB58String(ipfsHash);
-  const ipfsContentHex = Buffer.from(ipfsContentBytes).toString("hex").slice(4);
-  console.log("IPFS Hash", ipfsContentHex, ipfsContentHex.length);
-  return ipfsContentHex;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
