@@ -240,7 +240,6 @@ export default function Admin() {
     const updateContentParams: TransferContent = {
       feeUtxo: utxo[0],
       ownerTokenUtxo: ownerTokenUtxo[0],
-      collateralUtxo: collateralUtxo[0],
       walletAddress: [...usedAddresses, ...unusedAddress][0],
       registryNumber: 0,
       newOwnerAssetHex: "fc0e0323b254c0eb7275349d1e32eb6cc7ecfd03f3b71408eb46d75168696e736f6e2e616461",

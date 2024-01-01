@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
       const signedTx = await user.createContent(feeUtxo, ownerAssetHex, contentHashHex, registryNumber);
 
-      res.status(200).json({ signedTx: signedTx });
+      res.status(200).json({ signedTx });
     } else {
       res.status(405).json({ error: "Method Not Allowed" });
     }

@@ -30,7 +30,6 @@ export type UpdateContent = {
 export type TransferContent = {
   feeUtxo: UTxO;
   ownerTokenUtxo: UTxO;
-  collateralUtxo: UTxO;
   walletAddress: string;
   registryNumber: number;
   newOwnerAssetHex: string;
