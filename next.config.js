@@ -6,7 +6,11 @@ const nextConfig = {
       asyncWebAssembly: true,
       layers: true,
     };
+
     return config;
+  },
+  images: {
+    domains: ['accountabilitylab.org'],
   },
 };
 module.exports = nextConfig;
