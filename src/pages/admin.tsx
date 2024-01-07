@@ -5,7 +5,7 @@ import { TxConstants, oraclePolicyId } from "@/transactions/common";
 import { TransferContent, UpdateContent, UserAction } from "@/transactions/user";
 import { mConStr0 } from "@sidan-lab/sidan-csl";
 import multihashes from "multihashes";
-import { toPlutusData } from "@/aiken";
+import { toPlutusData } from "../aiken";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -24,19 +24,16 @@ export default function Admin() {
   const { connect, connected, wallet } = useWallet();
 
   async function uploadMarkdown() {
-    const content = "---\ntitle: Hello World\n---\n\n# Hello World\n\nThis is my first post!";
+    const content = { title: "Hello World", content: "Hello World\n\nThis is my first post!" };
 
-    const blob = new Blob([content], {
-      type: "text/markdown",
+    const blob = new Blob([JSON.stringify(content)], {
+      type: "application/json",
     });
 
     let formData = new FormData();
     formData.append("blob", blob, "test.md");
 
     const res: any = await infura.uploadContent(formData);
-    // {Hash: "QmfYKhKUo3guDQyATYyTuzokkPXaeMqNro73P6iCJEmGAj",
-    // Name: "test.md",
-    // Size: "73",}
     const ipfsHash: string = res.Hash;
 
     const ipfsContentBytes = multihashes.fromB58String(ipfsHash);
@@ -102,8 +99,14 @@ export default function Admin() {
       walletAddress,
       skey,
       collateralUTxO: {
-        txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
-        outputIndex: 7,
+        input: {
+          txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
+          outputIndex: 7,
+        },
+        output: {
+          amount: [{ unit: "lovelace", quantity: "10000000" }],
+          address: "addr_test1vpw22xesfv0hnkfw4k5vtrz386tfgkxu6f7wfadug7prl7s6gt89x",
+        },
       },
     },
   ];
@@ -187,7 +190,7 @@ export default function Admin() {
   const createContent = async (contentHex = "ff942613ef86667df9e8f2488f29615fc9aaad7906e266f686153d5b7c81abe0") => {
     const utxo = await getUtxosWithMinLovelace(20000000);
     const txHash = await user.createContent(
-      utxo[0].input,
+      utxo[0],
       "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
       contentHex,
       0
@@ -208,7 +211,6 @@ export default function Admin() {
     const updateContentParams: UpdateContent = {
       feeUtxo: utxo[0],
       ownerTokenUtxo: ownerTokenUtxo[0],
-      collateralUtxo: collateralUtxo[0],
       walletAddress: [...usedAddresses, ...unusedAddress][0],
       registryNumber: 0,
       newContentHashHex: "aaaabbbb",
@@ -235,7 +237,6 @@ export default function Admin() {
     const updateContentParams: TransferContent = {
       feeUtxo: utxo[0],
       ownerTokenUtxo: ownerTokenUtxo[0],
-      collateralUtxo: collateralUtxo[0],
       walletAddress: [...usedAddresses, ...unusedAddress][0],
       registryNumber: 0,
       newOwnerAssetHex: "fc0e0323b254c0eb7275349d1e32eb6cc7ecfd03f3b71408eb46d75168696e736f6e2e616461",

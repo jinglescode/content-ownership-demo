@@ -79,9 +79,9 @@ export const getScriptHash = (scriptIndex: ScriptIndex) => {
 };
 
 export type TxConstants = {
-  collateralUTxO: InputUTxO;
+  collateralUTxO: UTxO;
   walletAddress: string;
-  skey: string;
+  skey?: string;
 };
 
 export const makeMeshTxBuilderBody = () => {
@@ -179,7 +179,7 @@ export class MeshTxInitiator {
     return mConStr0([ownershipArray.length, ownershipArray]);
   };
 
-  protected getScriptUtxos = async (
+  getScriptUtxos = async (
     registryNumber: number,
     toFetch: ("oracle" | "content" | "ownership")[] = ["oracle", "content", "ownership"]
   ) => {
