@@ -3,10 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import logo from "./logo.png";
+import SignInButton from "../SignInButton/SignInButton";
+import { CardanoWallet } from "@meshsdk/react";
 
 function Header() {
+  
   return (
-    <header className="flex justify-between p-5 max-w-7xl mx-auto">
+    /**
+     * Returning the header component of the blog front page*/
+    <header className="flex justify-between p-5 max-w-7xl mx-auto"> 
       <div className="items-center space-x-5 flex">
         <Link href="/">
           <Image
@@ -27,7 +32,8 @@ function Header() {
       </div>
 
       <div className="flex items-center space-x-5 text-green-600">
-        <h3 >Sign In</h3>
+        <SignInButton/>
+        <CardanoWallet />
         <h3 className=" border px-4 py-1 rounded-full border-green-600">Get Started</h3>
       </div>
     </header>
