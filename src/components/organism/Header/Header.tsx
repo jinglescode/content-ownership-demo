@@ -9,6 +9,7 @@ import SignOutButton from "../../atom/SignOutButton/SignOutButton";
 
 import UserIcon from "../../atom/UserIcon/UserIcon";
 import CreateContentButton from "@/components/atom/CreateContentButton/CreateContentButton";
+import Icon from "@/components/atom/icon/Icon";
 
 function Header() {
   const { connect, connected, disconnect } = useWallet();
@@ -20,13 +21,7 @@ function Header() {
     <header className="flex justify-between p-5 max-w-7xl mx-auto">
       <div className="items-center space-x-5 flex">
         <Link href="/">
-          <Image
-            className=" object-contain cursor-pointer"
-            src={logo}
-            alt=""
-            height={50}
-            width={50}
-          />
+          <Icon />
         </Link>
         
         <div className=" md:inline-flex  items-center space-x-5 hidden">
