@@ -5,8 +5,16 @@ import Header from "@/components/organism/Header/Header";
 import React, { useRef, useState } from "react";
 import Image from "next/image";
 import ImagePreview from "@/components/atom/ImagePreview/ImagePreview";
+import Tiptap from "./TipTap";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import CreateContenthandler from "../api/create-content";
+import NewContentHeader from "@/components/organism/NewContentHeader/NewContentHeader";
+import { Upload } from "lucide-react";
 
 function Page(): React.JSX.Element {
+  const [loading, setLoading] = useState<boolean>(false)
   /**Add Image */
   const imgRef = useRef<HTMLInputElement | null>(null);
   const [image, setImage] = useState<File | null>(null);
@@ -29,12 +37,47 @@ function Page(): React.JSX.Element {
     setImageUrl(null);
   };
 
+  /**Title */
+  const [title, setTitle] = useState<string>("")
+
+  /** Description*/
+  const [description, setDescription] = useState<string>("")
+
+/**Editor */
+const editor = useEditor({
+  extensions: [
+    StarterKit,
+    Placeholder.configure({
+      placeholder: "Write something …",
+    }),
+    //   CodeBlockLowlight.configure({
+    //     lowlight,
+    //   }),
+  ],
+  content: "",
+});
+
+  /**Submit Handler */
+   const submitHandler = ()=>{
+    setLoading(true)
+    const formData = new FormData
+    const htmlContent = editor?.getHTML()
+    formData.append("Title", title);
+    formData.append("Description", description );
+    formData.append("Content", htmlContent ??"")
+     if(image){
+      formData.append("Image",image)
+     }
+     
+   }
   return (
     <div>
-      <Header />
+      <NewContentHeader title={title} loading={loading} callback={submitHandler}/>
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage}/>}
+        {imageUrl && (
+          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
+        )}
         <div className="mt-4">
           <input
             type="file"
@@ -43,18 +86,17 @@ function Page(): React.JSX.Element {
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Image
-            className="cursor-pointer"
-            src=""
-            alt="addImage"
-            onClick={addImageHandler}
-          />
+          <Upload className="cursor-pointer bg-black" onClick={addImageHandler}/>
+         
+          
         </div>
         {/**Title Input */}
         <div className="mt-4">
           <input
             className=" outline-none h-10 text-2xl  font-bold border-none w-full text-black"
             placeholder="Title.."
+            value={title}
+            onChange={(event )=>{setTitle(event.target.value)}}
           />
         </div>
         {/**Description */}
@@ -62,13 +104,15 @@ function Page(): React.JSX.Element {
           <input
             className=" outline-none h-10 text-xl  font-bold border-none w-full text-black"
             placeholder="Write your short description"
+            value={description}
+            onChange={(event )=>{setDescription(event.target.value)}}
           />
         </div>
+        {/** Rich Text Editor */}
+        <div className="mt-4 text-black">
+          <Tiptap editor={editor} />
+        </div>
       </div>
-      <h3 className="text-black text-center">New Content</h3>
-      <TextField label="Title" />
-      <TextField label="Author" />
-      <TextField label="Description" />
     </div>
   );
 }

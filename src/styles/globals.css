@@ -25,3 +25,34 @@ body {
     )
     rgb(var(--background-start-rgb)); */
 }
+
+.tiptap{
+  outline: none;
+  padding: 5px;
+}
+/* Placeholder (at the top) */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.tiptap pre {
+  background: #0d0d0d;
+  border-radius: 0.5rem;
+  color: #fff;
+  font-family: "JetBrainsMono", monospace;
+  padding: 0.75rem 1rem;
+}
+
+.tiptap pre code {
+  background: none;
+  color: inherit;
+  font-size: 0.8rem;
+  padding: 0;
+}
