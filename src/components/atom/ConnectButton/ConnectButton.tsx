@@ -1,18 +1,19 @@
 import { addaccount } from "@/redux/actions/account";
+import { adduserAddress, updateuserAddress } from "@/redux/actions/userAddress";
 import { addwallet, updatewallet } from "@/redux/actions/wallet";
 import { RootReducer } from "@/redux/rootReducer";
 import { AppDispatch } from "@/redux/store";
-import { BrowserWallet, Wallet } from "@meshsdk/core";
-import { useWallet } from "@meshsdk/react";
+import { AppWallet, BrowserWallet, Wallet } from "@meshsdk/core";
+import { WalletContext, useAddress, useWallet } from "@meshsdk/react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 function ConnectButton() {
   const { connect, connected, disconnect } = useWallet();
   const [cardanoWallet, setcardanoWallet] = useState<Array<Wallet>>([]);
-
+  const address =useAddress();
   const wallet = useSelector((state: RootReducer) => state.wallet);
-  const account = useSelector((state: RootReducer) => state.account);
+  const userAddress = useSelector((state: RootReducer) => state.userAddress);
   
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
@@ -23,12 +24,15 @@ function ConnectButton() {
         ? updatewallet(BrowserWallet.getInstalledWallets())
         : addwallet(BrowserWallet.getInstalledWallets())
     );
+    dispatch(adduserAddress(address))
     
-  }, [dispatch, wallet.length]);
+  }, [dispatch, wallet.length,address]);
 
   useEffect(() => {
-    dispatch(addaccount)
-  }, [connected])
+    console.log(userAddress,address)
+    
+  }, [userAddress])
+  
   
 
   const connectWallet = async (walletName: string) => {
