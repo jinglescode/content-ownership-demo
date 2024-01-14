@@ -1,4 +1,4 @@
-import Header from "@/components/atom/Header/Header";
+import Header from "@/components/organism/Header/Header";
 import Head from "next/head";
 import Image from "next/image";
 
@@ -19,8 +19,7 @@ export default function Home() {
   
 
   return (
-    <MeshProvider>
-      <Provider store={store}>
+    
         <div className=" max-w-7xl">
           <Head>
             <title>Content-Ownership-demo</title>
@@ -56,7 +55,6 @@ export default function Home() {
 
           {/**Post component */}
         </div>
-      </Provider>
-    </MeshProvider>
+     
   );
 }
