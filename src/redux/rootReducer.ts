@@ -1,8 +1,12 @@
 import {combineReducers} from 'redux';
 import createPostReducer from './reducers/createPost';
+import walletReduecer from "./reducers/wallet"
+import accountReducer from "./reducers/account"
 
 const rootReducer = combineReducers({
-    createPost:createPostReducer
+    createPost:createPostReducer,
+    wallet:walletReduecer,
+    account:accountReducer
     // all reducers go here
   });
   
