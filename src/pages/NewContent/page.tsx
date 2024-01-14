@@ -12,9 +12,42 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CreateContenthandler from "../api/create-content";
 import NewContentHeader from "@/components/organism/NewContentHeader/NewContentHeader";
 import { Upload } from "lucide-react";
+import { useWallet } from "@meshsdk/react";
+import axios from "axios";
 
 function Page(): React.JSX.Element {
-  const [loading, setLoading] = useState<boolean>(false)
+  const { wallet } = useWallet();
+
+  // Get assets (NFT to be selected as account)
+  // unit: what we need for ownerAssetHex
+  wallet.getAssets().then((assets) => {
+    console.log(assets);
+  });
+
+  // walletAddress: first item in used address, if no used address, use first item in unused address
+  wallet.getUsedAddresses().then((addresses) => {
+    console.log(addresses);
+  });
+  wallet.getUnusedAddresses().then((addresses) => {
+    console.log(addresses);
+  });
+
+  // Get collateral utxo
+  wallet.getCollateral().then((collateral) => {
+    console.log("Collateral", collateral);
+  });
+
+  // Get fee UTxO: select an UTxO with >5,000,000 lovelace
+  wallet.getUtxos().then((utxos) => {
+    console.log("UTXOs", utxos);
+  });
+
+  // Axios
+  axios.get("../api/get-content").then((res) => {
+    console.log("test", res);
+  });
+
+  const [loading, setLoading] = useState<boolean>(false);
   /**Add Image */
   const imgRef = useRef<HTMLInputElement | null>(null);
   const [image, setImage] = useState<File | null>(null);
@@ -38,46 +71,44 @@ function Page(): React.JSX.Element {
   };
 
   /**Title */
-  const [title, setTitle] = useState<string>("")
+  const [title, setTitle] = useState<string>("");
 
   /** Description*/
-  const [description, setDescription] = useState<string>("")
+  const [description, setDescription] = useState<string>("");
 
-/**Editor */
-const editor = useEditor({
-  extensions: [
-    StarterKit,
-    Placeholder.configure({
-      placeholder: "Write something …",
-    }),
-    //   CodeBlockLowlight.configure({
-    //     lowlight,
-    //   }),
-  ],
-  content: "",
-});
+  /**Editor */
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: "Write something …",
+      }),
+      //   CodeBlockLowlight.configure({
+      //     lowlight,
+      //   }),
+    ],
+    content: "",
+  });
 
   /**Submit Handler */
-   const submitHandler = ()=>{
-    setLoading(true)
-    const formData = new FormData
-    const htmlContent = editor?.getHTML()
+  const submitHandler = () => {
+    setLoading(true);
+    const formData = new FormData();
+    const htmlContent = editor?.getHTML();
     formData.append("Title", title);
-    formData.append("Description", description );
-    formData.append("Content", htmlContent ??"")
-     if(image){
-      formData.append("Image",image)
-     }
-     
-   }
+    formData.append("Description", description);
+    formData.append("Content", htmlContent ?? "");
+    if (image) {
+      formData.append("Image", image);
+    }
+  };
+
   return (
     <div>
-      <NewContentHeader title={title} loading={loading} callback={submitHandler}/>
+      <NewContentHeader title={title} loading={loading} callback={submitHandler} />
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && (
-          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
-        )}
+        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage} />}
         <div className="mt-4">
           <input
             type="file"
@@ -86,9 +117,7 @@ const editor = useEditor({
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Upload className="cursor-pointer bg-black" onClick={addImageHandler}/>
-         
-          
+          <Upload className="cursor-pointer bg-black" onClick={addImageHandler} />
         </div>
         {/**Title Input */}
         <div className="mt-4">
@@ -96,7 +125,9 @@ const editor = useEditor({
             className=" outline-none h-10 text-2xl  font-bold border-none w-full text-black"
             placeholder="Title.."
             value={title}
-            onChange={(event )=>{setTitle(event.target.value)}}
+            onChange={(event) => {
+              setTitle(event.target.value);
+            }}
           />
         </div>
         {/**Description */}
@@ -105,13 +136,13 @@ const editor = useEditor({
             className=" outline-none h-10 text-xl  font-bold border-none w-full text-black"
             placeholder="Write your short description"
             value={description}
-            onChange={(event )=>{setDescription(event.target.value)}}
+            onChange={(event) => {
+              setDescription(event.target.value);
+            }}
           />
         </div>
         {/** Rich Text Editor */}
-        <div className="mt-4 text-black">
-          <Tiptap editor={editor} />
-        </div>
+        <div className="mt-4 text-black">{/* <Tiptap editor={editor} /> */}</div>
       </div>
     </div>
   );

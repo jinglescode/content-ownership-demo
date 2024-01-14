@@ -15,7 +15,6 @@ type Body = {
   feeUtxo: UTxO;
   ownerTokenUtxo: UTxO;
   collateralUtxo: UTxO;
-  ownerAssetHex: string;
   walletAddress: string;
   registryNumber: number;
   newContent: any;
@@ -30,7 +29,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const {
         feeUtxo,
         ownerTokenUtxo,
-        ownerAssetHex,
         collateralUtxo,
         walletAddress,
         registryNumber,

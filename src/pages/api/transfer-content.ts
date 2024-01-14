@@ -17,8 +17,8 @@ type Body = {
   collateralUtxo: UTxO;
   walletAddress: string;
   registryNumber: number;
-  newOwnerAssetHex: string;
-  contentNumber: number;
+  newOwnerAssetHex: string; // user input
+  contentNumber: number; // index of content in api `get-content`'s data
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
