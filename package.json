@@ -22,6 +22,7 @@
     "@tiptap/pm": "^2.1.16",
     "@tiptap/react": "^2.1.16",
     "@tiptap/starter-kit": "^2.1.16",
+    "lucide-react": "^0.309.0",
     "multihashes": "^4.0.3",
     "next": "latest",
     "react": "latest",
