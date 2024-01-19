@@ -26,7 +26,7 @@ function Page(): React.JSX.Element {
   // Variable initialization
   let walletAddress: String;
   let feeUtxo: UTxO;
-  let collateraUtxo: UTxO;
+  let collateralUtxo: UTxO;
   let ownerAssetHex: String;
   let registryNumber: Number;
   let signTx :String;
@@ -79,45 +79,52 @@ function Page(): React.JSX.Element {
   const submitHandler = async () => {
     console.log("submmited, loading...")
     setLoading(true);
+    const content = new FormData();
     const formData = new FormData();
     const htmlContent = editor?.getHTML();
 
-    formData.append("Title", title);
-    formData.append("Description", description);
-    formData.append("Content", htmlContent ?? "");
+    content.append("Title", title);
+    content.append("Description", description);
+    content.append("Content", htmlContent ?? "");
     if (image) {
-      formData.append("Image", image);
+      content.append("Image", image);
     }
+    
     try {
       // walletAddress: first item in used address, if no used address, use first item in unused address
       await wallet.getUsedAddresses().then((addresses) => {
         walletAddress = addresses[0];
+        formData.append("walletAddress",addresses[0]);
         console.log("walletAddress:", walletAddress)
       });
       // Get fee UTxO: select an UTxO with >5,000,000 lovelace
       await wallet.getUtxos().then((utxos) => {
         feeUtxo = utxos[0];
+        formData.append("feeUtxo",utxos[0]);
         console.log("feeUtxo:", feeUtxo)
       });
       await wallet.getCollateral().then((collateral) => {
-        collateraUtxo = collateral[0];
-        console.log("collateraUtxo:", collateraUtxo)
+        collateralUtxo = collateral[0];
+        formData.append("collateraUtxo",collateral[0]);
+        console.log("collateraUtxo:", collateralUtxo)
       });
       
       // Get assets (NFT to be selected as account)
       // unit: what we need for ownerAssetHex
       ownerAssetHex = assestHex[0].unit;
+      formData.append("ownerAssetHex",assestHex[0].unit)
+      
       registryNumber = 0;
-      console.log("formData",formData);
+      console.log("formData",content.values());
 
       await axios.post("/api/create-content",{
         walletAddress: walletAddress,
         feeUtxo: feeUtxo,
-        collateraUtxo: collateraUtxo,
+        collateralUtxo: collateralUtxo,
         ownerAssetHex: ownerAssetHex,
         registryNumber: registryNumber,
-        content: formData,
-      },).then((res)=>{
+        content: content,
+      }).then((res)=>{
         console.log(res)
         setLoading(false);
       }).catch((error)=>{

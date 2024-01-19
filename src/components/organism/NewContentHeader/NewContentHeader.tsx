@@ -23,7 +23,7 @@ export default function NewContentHeader({
 
           <p>New Content</p>
         </div>
-        <button className="bg-black rounded-lg p-1 cursor-pointer" disabled={title.length < 10 || loading} onClick={callback}>
+        <button className="bg-black rounded-lg p-1 cursor-pointer" disabled={loading} onClick={callback}>
           {loading ? "Saving.." : "Save"}
         </button>
       </div>
