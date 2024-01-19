@@ -1,4 +1,4 @@
-import SelectAssestButton from "@/components/organism/SelectAssestButton/SelectAssestButton";
+import SelectAssetButton from "@/components/organism/SelectAssestButton/SelectAssestButton";
 import TextField from "@/components/atom/Textfield/Textfield";
 import Header from "@/components/organism/Header/Header";
 import UserProfile from "@/components/organism/UserProfile/UserProfile";
@@ -9,7 +9,7 @@ function User(walletAddress: String) {
     <div>
       <Header />
       {/* {<UserProfile />} */}
-      <SelectAssestButton/>
+      <SelectAssetButton/>
     </div>
   );
 }

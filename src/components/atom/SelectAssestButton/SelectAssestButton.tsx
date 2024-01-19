@@ -3,7 +3,7 @@ import AssetHexList from "./AssetHexList";
 import ConnectButton from "../ConnectButton/ConnectButton";
 import { AppDispatch } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
-import { addasset, updateasset } from "@/redux/actions/asset";
+import { addAsset, updateAsset } from "@/redux/actions/asset";
 import { useWallet } from "@meshsdk/react";
 import { RootReducer } from "@/redux/rootReducer";
 import { AssetExtended } from "@meshsdk/core";

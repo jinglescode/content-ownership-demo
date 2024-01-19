@@ -3,12 +3,12 @@ import AssetHexList from "./AssetHexList";
 import ConnectButton from "../../atom/ConnectButton/ConnectButton";
 import { AppDispatch } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
-import { addasset, updateasset } from "@/redux/actions/asset";
+import { addAsset, updateAsset } from "@/redux/actions/asset";
 import { useWallet } from "@meshsdk/react";
 import { RootReducer } from "@/redux/rootReducer";
 import { AssetExtended } from "@meshsdk/core";
 
-function SelectAssestButton() {
+function SelectAssetButton() {
   const [getAssets, setGetAssets] = useState(false);
 
   const asset = useSelector((state: RootReducer) => state.asset);
@@ -20,7 +20,7 @@ function SelectAssestButton() {
     }
   }, [asset]);
 
-  const assestHandler = () => {
+  const assetHandler = () => {
     setSelected(true);
 
     setGetAssets((prev) => !prev);
@@ -59,7 +59,7 @@ function SelectAssestButton() {
         <>
           <div className="absolute bg-blue-600 top-15 flex flex-col items-start rounded-lg">
             {/**Assest Hex */}
-            <AssetHexList callback={assestHandler} />
+            <AssetHexList callback={assetHandler} />
           </div>
         </>
       )}
@@ -67,4 +67,4 @@ function SelectAssestButton() {
   );
 }
 
-export default SelectAssestButton;
+export default SelectAssetButton;

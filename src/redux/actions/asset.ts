@@ -20,11 +20,11 @@ export interface ResetAsset {
 
 export type AssetActionTypes = AddAsset | UpdateAsset | ResetAsset;
 
-export function addasset(data: any): AddAsset {
+export function addAsset(data: any): AddAsset {
   return { type: ADD_ASSET, data }
 }
 
-export function updateasset(data: any): UpdateAsset {
+export function updateAsset(data: any): UpdateAsset {
   return { type: UPDATE_ASSET, data }
 }
 

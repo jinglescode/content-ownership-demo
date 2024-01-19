@@ -1,4 +1,4 @@
-import { addasset, updateasset } from "@/redux/actions/asset";
+import { addAsset, updateAsset } from "@/redux/actions/asset";
 import { RootReducer } from "@/redux/rootReducer";
 import { AppDispatch } from "@/redux/store";
 import { AssetExtended, Wallet } from "@meshsdk/core";
@@ -36,8 +36,8 @@ function AssetHexList({callback}:{callback:VoidFunction}) {
             onClick={() => {
               /**Set the assest Hex to reducer */
               assestHex.length > 0
-                ? dispatch(updateasset(assest))
-                : dispatch(addasset(assest));
+                ? dispatch(updateAsset(assest))
+                : dispatch(addAsset(assest));
                 setSelected(true);
                 callback();
             }}
