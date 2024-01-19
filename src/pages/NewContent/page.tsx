@@ -14,38 +14,22 @@ import NewContentHeader from "@/components/organism/NewContentHeader/NewContentH
 import { Upload } from "lucide-react";
 import { useWallet } from "@meshsdk/react";
 import axios from "axios";
+import type { Body } from "../api/create-content";
+import { UTxO } from "@meshsdk/core";
+import { useSelector } from "react-redux";
+import { RootReducer } from "@/redux/rootReducer";
 
 function Page(): React.JSX.Element {
-  const { wallet } = useWallet();
-
-  // Get assets (NFT to be selected as account)
-  // unit: what we need for ownerAssetHex
-  wallet.getAssets().then((assets) => {
-    console.log(assets);
-  });
-
-  // walletAddress: first item in used address, if no used address, use first item in unused address
-  wallet.getUsedAddresses().then((addresses) => {
-    console.log(addresses);
-  });
-  wallet.getUnusedAddresses().then((addresses) => {
-    console.log(addresses);
-  });
-
-  // Get collateral utxo
-  wallet.getCollateral().then((collateral) => {
-    console.log("Collateral", collateral);
-  });
-
-  // Get fee UTxO: select an UTxO with >5,000,000 lovelace
-  wallet.getUtxos().then((utxos) => {
-    console.log("UTXOs", utxos);
-  });
-
-  // Axios
-  axios.get("../api/get-content").then((res) => {
-    console.log("test", res);
-  });
+  const { wallet, connected } = useWallet();
+  const assestHex = useSelector((state: RootReducer) => state.asset);
+  
+  // Variable initialization
+  let walletAddress: String;
+  let feeUtxo: UTxO;
+  let collateraUtxo: UTxO;
+  let ownerAssetHex: String;
+  let registryNumber: Number;
+  let signTx :String;
 
   const [loading, setLoading] = useState<boolean>(false);
   /**Add Image */
@@ -91,24 +75,73 @@ function Page(): React.JSX.Element {
   });
 
   /**Submit Handler */
-  const submitHandler = () => {
+
+  const submitHandler = async () => {
+    console.log("submmited, loading...")
     setLoading(true);
     const formData = new FormData();
     const htmlContent = editor?.getHTML();
+
     formData.append("Title", title);
     formData.append("Description", description);
     formData.append("Content", htmlContent ?? "");
     if (image) {
       formData.append("Image", image);
     }
+    try {
+      // walletAddress: first item in used address, if no used address, use first item in unused address
+      await wallet.getUsedAddresses().then((addresses) => {
+        walletAddress = addresses[0];
+        console.log("walletAddress:", walletAddress)
+      });
+      // Get fee UTxO: select an UTxO with >5,000,000 lovelace
+      await wallet.getUtxos().then((utxos) => {
+        feeUtxo = utxos[0];
+        console.log("feeUtxo:", feeUtxo)
+      });
+      await wallet.getCollateral().then((collateral) => {
+        collateraUtxo = collateral[0];
+        console.log("collateraUtxo:", collateraUtxo)
+      });
+      
+      // Get assets (NFT to be selected as account)
+      // unit: what we need for ownerAssetHex
+      ownerAssetHex = assestHex[0].unit;
+      registryNumber = 0;
+      console.log("formData",formData);
+
+      await axios.post("/api/create-content",{
+        walletAddress: walletAddress,
+        feeUtxo: feeUtxo,
+        collateraUtxo: collateraUtxo,
+        ownerAssetHex: ownerAssetHex,
+        registryNumber: registryNumber,
+        content: formData,
+      },).then((res)=>{
+        console.log(res)
+        setLoading(false);
+      }).catch((error)=>{
+        console.log(error);
+        setLoading(false);
+      });
+      
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
     <div>
-      <NewContentHeader title={title} loading={loading} callback={submitHandler} />
+      <NewContentHeader
+        title={title}
+        loading={loading}
+        callback={submitHandler}
+      />
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage} />}
+        {imageUrl && (
+          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
+        )}
         <div className="mt-4">
           <input
             type="file"
@@ -117,7 +150,10 @@ function Page(): React.JSX.Element {
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Upload className="cursor-pointer bg-black" onClick={addImageHandler} />
+          <Upload
+            className="cursor-pointer bg-black"
+            onClick={addImageHandler}
+          />
         </div>
         {/**Title Input */}
         <div className="mt-4">
@@ -142,10 +178,15 @@ function Page(): React.JSX.Element {
           />
         </div>
         {/** Rich Text Editor */}
-        <div className="mt-4 text-black">{/* <Tiptap editor={editor} /> */}</div>
+        <div className="mt-4 text-black">
+          <Tiptap editor={editor} />
+        </div>
       </div>
     </div>
   );
 }
 
 export default Page;
+function aysnc() {
+  throw new Error("Function not implemented.");
+}

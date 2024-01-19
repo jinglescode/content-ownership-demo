@@ -11,7 +11,7 @@ export default function NewContentHeader({
 }: {
   title: string;
   loading: boolean;
-  callback: () => void;
+  callback: ()=>Promise<void>;
 }) {
   return (
     <div className="border-b">
