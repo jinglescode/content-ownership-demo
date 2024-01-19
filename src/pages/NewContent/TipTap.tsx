@@ -1,24 +1,15 @@
 "use client";
 
 import Placeholder from "@tiptap/extension-placeholder";
-import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
+import { useEditor, EditorContent, BubbleMenu, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Code, Italic, Strikethrough } from "lucide-react";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
 
-const Tiptap = () => {
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder: "Write something …",
-      }),
-      //   CodeBlockLowlight.configure({
-      //     lowlight,
-      //   }),
-    ],
-    content: "",
-  });
+const Tiptap = ({editor}:{editor:Editor | null}) => {
+//   const lowlight = createLowlight(common);
+  
 
   return (
     <>
