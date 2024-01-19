@@ -22,11 +22,15 @@ import { RootReducer } from "@/redux/rootReducer";
 function Page(): React.JSX.Element {
   const { wallet, connected } = useWallet();
   const assetHex = useSelector((state: RootReducer) => state.asset);
-
+  const walletAddress = useSelector(
+    (state: RootReducer) => state.walletAddress
+  );
+  const feeUtxo = useSelector((state: RootReducer) => state.feeUtxo);
+  const collateralUtxo = useSelector(
+    (state: RootReducer) => state.collateralUtxo
+  );
   // Variable initialization
-  let walletAddress: String;
-  let feeUtxo: UTxO;
-  let collateralUtxo: UTxO;
+
   let ownerAssetHex: String;
   let registryNumber: Number;
 
@@ -35,6 +39,7 @@ function Page(): React.JSX.Element {
   const imgRef = useRef<HTMLInputElement | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+
   const addImageHandler = () => {
     imgRef.current?.click();
   };
@@ -84,41 +89,29 @@ function Page(): React.JSX.Element {
     /**Content Dict */
     let content = {
       title: title,
-      Description: description,
-      Content: htmlContent,
-      Image: image,
+      description: description,
+      content: htmlContent,
+      image: image,
     };
 
     try {
-      // walletAddress: first item in used address, if no used address, use first item in unused address
-      await wallet.getUsedAddresses().then((addresses) => {
-        walletAddress = addresses[0];
-
-        console.log("walletAddress:", walletAddress);
-      });
-      // Get fee UTxO: select an UTxO with >5,000,000 lovelace
-      await wallet.getUtxos().then((utxos) => {
-        feeUtxo = utxos[0];
-
-        console.log("feeUtxo:", feeUtxo);
-      });
-      await wallet.getCollateral().then((collateral) => {
-        collateralUtxo = collateral[0];
-
-        console.log("collateralUtxo:", collateralUtxo);
-      });
+      console.log("walletAddress", walletAddress[0]);
+      console.log("feeUtxo", feeUtxo[0]);
+      console.log("collateralUtxo", collateralUtxo[0]);
 
       // Get assets (NFT to be selected as account)
       // unit: what we need for ownerAssetHex
       ownerAssetHex = assetHex[0].unit;
+      console.log("ownerAssetHex", ownerAssetHex);
 
       registryNumber = 0;
+      console.log("registryNumber", registryNumber);
       console.log("Content", content);
 
       const res = await axios.post("/api/create-content", {
-        walletAddress: walletAddress,
-        feeUtxo: feeUtxo,
-        collateralUtxo: collateralUtxo,
+        walletAddress: walletAddress[0],
+        feeUtxo: feeUtxo[0],
+        collateralUtxo: collateralUtxo[0],
         ownerAssetHex: ownerAssetHex,
         registryNumber: registryNumber,
         content: content,
@@ -135,10 +128,16 @@ function Page(): React.JSX.Element {
 
   return (
     <div>
-      <NewContentHeader title={title} loading={loading} callback={submitHandler} />
+      <NewContentHeader
+        title={title}
+        loading={loading}
+        callback={submitHandler}
+      />
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage} />}
+        {imageUrl && (
+          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
+        )}
         <div className="mt-4">
           <input
             type="file"
@@ -147,7 +146,10 @@ function Page(): React.JSX.Element {
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Upload className="cursor-pointer bg-black" onClick={addImageHandler} />
+          <Upload
+            className="cursor-pointer bg-black"
+            onClick={addImageHandler}
+          />
         </div>
         {/**Title Input */}
         <div className="mt-4">
