@@ -21,15 +21,14 @@ import { RootReducer } from "@/redux/rootReducer";
 
 function Page(): React.JSX.Element {
   const { wallet, connected } = useWallet();
-  const assestHex = useSelector((state: RootReducer) => state.asset);
-  
+  const assetHex = useSelector((state: RootReducer) => state.asset);
+
   // Variable initialization
   let walletAddress: String;
   let feeUtxo: UTxO;
   let collateralUtxo: UTxO;
   let ownerAssetHex: String;
   let registryNumber: Number;
-  let signTx :String;
 
   const [loading, setLoading] = useState<boolean>(false);
   /**Add Image */
@@ -77,61 +76,62 @@ function Page(): React.JSX.Element {
   /**Submit Handler */
 
   const submitHandler = async () => {
-    console.log("submmited, loading...")
+    console.log("submitted, loading...");
     setLoading(true);
-    const content = new FormData();
-    const formData = new FormData();
+
     const htmlContent = editor?.getHTML();
 
-    content.append("Title", title);
-    content.append("Description", description);
-    content.append("Content", htmlContent ?? "");
-    if (image) {
-      content.append("Image", image);
-    }
-    
+    /**Content Dict */
+    let content = {
+      title: title,
+      Description: description,
+      Content: htmlContent,
+      Image: image,
+    };
+
     try {
       // walletAddress: first item in used address, if no used address, use first item in unused address
       await wallet.getUsedAddresses().then((addresses) => {
         walletAddress = addresses[0];
-        formData.append("walletAddress",addresses[0]);
-        console.log("walletAddress:", walletAddress)
+
+        console.log("walletAddress:", walletAddress);
       });
       // Get fee UTxO: select an UTxO with >5,000,000 lovelace
       await wallet.getUtxos().then((utxos) => {
         feeUtxo = utxos[0];
-        formData.append("feeUtxo",utxos[0]);
-        console.log("feeUtxo:", feeUtxo)
+
+        console.log("feeUtxo:", feeUtxo);
       });
       await wallet.getCollateral().then((collateral) => {
         collateralUtxo = collateral[0];
-        formData.append("collateraUtxo",collateral[0]);
-        console.log("collateraUtxo:", collateralUtxo)
+
+        console.log("collateralUtxo:", collateralUtxo);
       });
-      
+
       // Get assets (NFT to be selected as account)
       // unit: what we need for ownerAssetHex
-      ownerAssetHex = assestHex[0].unit;
-      formData.append("ownerAssetHex",assestHex[0].unit)
-      
-      registryNumber = 0;
-      console.log("formData",content.values());
+      ownerAssetHex = assetHex[0].unit;
 
-      await axios.post("/api/create-content",{
-        walletAddress: walletAddress,
-        feeUtxo: feeUtxo,
-        collateralUtxo: collateralUtxo,
-        ownerAssetHex: ownerAssetHex,
-        registryNumber: registryNumber,
-        content: content,
-      }).then((res)=>{
-        console.log(res)
-        setLoading(false);
-      }).catch((error)=>{
-        console.log(error);
-        setLoading(false);
-      });
-      
+      registryNumber = 0;
+      console.log("Content", content);
+
+      await axios
+        .post("/api/create-content", {
+          walletAddress: walletAddress,
+          feeUtxo: feeUtxo,
+          collateralUtxo: collateralUtxo,
+          ownerAssetHex: ownerAssetHex,
+          registryNumber: registryNumber,
+          content: content,
+        })
+        .then((res) => {
+          console.log(res);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.log(error);
+          setLoading(false);
+        });
     } catch (error) {
       console.log(error);
     }
