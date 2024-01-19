@@ -6,7 +6,7 @@ export const uploadMarkdown = async <T extends object>(content: T) => {
     type: "application/json",
   });
   let formData = new FormData();
-  formData.append("blob", blob, "test.md");
+  formData.append("blob", blob, "test.json");
   const res: any = await infura.uploadContent(formData);
   const ipfsHash: string = res.Hash;
   const ipfsContentBytes = multihashes.fromB58String(ipfsHash);

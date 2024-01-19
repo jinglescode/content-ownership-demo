@@ -5,7 +5,7 @@ import { UserAction } from "@/transactions/user";
 
 type Data =
   | {
-      signedTx: string;
+      rawTx: string;
     }
   | {
       error: string;
@@ -27,7 +27,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const { walletAddress, feeUtxo, collateralUtxo, ownerAssetHex, registryNumber, content }: Body = req.body;
 
       // Upload content to IPFS and get Hash
+      console.log("content", content);
+
       const contentHashHex = await uploadMarkdown(content);
+      console.log("contentHashHex", contentHashHex);
 
       // Build Transaction
       const mesh = new MeshTxBuilder({ fetcher: maestro, submitter: maestro });
@@ -36,9 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         walletAddress: walletAddress,
       });
 
-      const signedTx = await user.createContent(feeUtxo, ownerAssetHex, contentHashHex, registryNumber);
+      const rawTx = await user.createContent(feeUtxo, ownerAssetHex, contentHashHex, registryNumber);
 
-      res.status(200).json({ signedTx });
+      res.status(200).json({ rawTx });
     } else {
       res.status(405).json({ error: "Method Not Allowed" });
     }

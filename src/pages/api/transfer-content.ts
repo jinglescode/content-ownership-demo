@@ -5,7 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 type Data =
   | {
-      signedTx: string;
+      rawTx: string;
     }
   | {
       error: string;
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         walletAddress: walletAddress,
       });
 
-      const signedTx = await user.transferContent({
+      const rawTx = await user.transferContent({
         feeUtxo,
         ownerTokenUtxo,
         walletAddress,
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         contentNumber,
       });
 
-      res.status(200).json({ signedTx });
+      res.status(200).json({ rawTx });
     } else {
       res.status(405).json({ error: "Method Not Allowed" });
     }

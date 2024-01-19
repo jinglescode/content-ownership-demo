@@ -115,23 +115,19 @@ function Page(): React.JSX.Element {
       registryNumber = 0;
       console.log("Content", content);
 
-      await axios
-        .post("/api/create-content", {
-          walletAddress: walletAddress,
-          feeUtxo: feeUtxo,
-          collateralUtxo: collateralUtxo,
-          ownerAssetHex: ownerAssetHex,
-          registryNumber: registryNumber,
-          content: content,
-        })
-        .then((res) => {
-          console.log(res);
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.log(error);
-          setLoading(false);
-        });
+      const res = await axios.post("/api/create-content", {
+        walletAddress: walletAddress,
+        feeUtxo: feeUtxo,
+        collateralUtxo: collateralUtxo,
+        ownerAssetHex: ownerAssetHex,
+        registryNumber: registryNumber,
+        content: content,
+      });
+      const rawTx = res.data.rawTx;
+
+      const signedTx = await wallet.signTx(rawTx, true);
+      const txHash = await wallet.submitTx(signedTx);
+      console.log("txHash", txHash);
     } catch (error) {
       console.log(error);
     }
@@ -139,16 +135,10 @@ function Page(): React.JSX.Element {
 
   return (
     <div>
-      <NewContentHeader
-        title={title}
-        loading={loading}
-        callback={submitHandler}
-      />
+      <NewContentHeader title={title} loading={loading} callback={submitHandler} />
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && (
-          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
-        )}
+        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage} />}
         <div className="mt-4">
           <input
             type="file"
@@ -157,10 +147,7 @@ function Page(): React.JSX.Element {
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Upload
-            className="cursor-pointer bg-black"
-            onClick={addImageHandler}
-          />
+          <Upload className="cursor-pointer bg-black" onClick={addImageHandler} />
         </div>
         {/**Title Input */}
         <div className="mt-4">
