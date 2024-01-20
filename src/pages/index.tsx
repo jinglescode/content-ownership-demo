@@ -22,7 +22,10 @@ import {
   updateCollateralUtxo,
 } from "@/redux/actions/collateralUtxo";
 import { addAsset, updateAsset } from "@/redux/actions/asset";
-import { addGetContentData, updateGetContentData } from "@/redux/actions/getContentData";
+import {
+  addGetContentData,
+  updateGetContentData,
+} from "@/redux/actions/getContentData";
 import { addAssetsList, updateAssetsList } from "@/redux/actions/assetsList";
 
 export default function Home() {
@@ -38,9 +41,10 @@ export default function Home() {
   const collateralUtxo = useSelector(
     (state: RootReducer) => state.collateralUtxo
   );
-  const assetsList =useSelector((state: RootReducer) => state.assetsList);
-  const getContentData = useSelector((state: RootReducer) => state.getContentData);
-
+  const assetsList = useSelector((state: RootReducer) => state.assetsList);
+  const getContentData = useSelector(
+    (state: RootReducer) => state.getContentData
+  );
 
   const savingWalletData = async () => {
     try {
@@ -72,20 +76,18 @@ export default function Home() {
           ? updateCollateralUtxo(collateral[0])
           : addCollateralUtxo(collateral[0])
       );
-      
+
       /**Saving asset */
       console.log("assetList:", asset);
       dispatch(
-        assetsList.length > 0
-          ? updateAssetsList(asset)
-          : addAssetsList(asset)
+        assetsList.length > 0 ? updateAssetsList(asset) : addAssetsList(asset)
       );
     } catch (error) {}
   };
 
   const fetchingData = async () => {
     const res = await axios.get("../api/get-content");
-    
+
     dispatch(
       getContentData.length > 0
         ? updateGetContentData(res.data)
@@ -98,7 +100,7 @@ export default function Home() {
   //TODO:change it into loading , trigger once only
   useEffect(() => {
     fetchingData();
-    savingWalletData()
+    savingWalletData();
   }, [connected]);
 
   return (
@@ -135,7 +137,7 @@ export default function Home() {
         />
       </div>
       {/**Transfer Content button */}
-      <TransferContentButton />
+      {connected && <TransferContentButton />}
       {/**Post component */}
       <PostTable data={data} />
     </div>

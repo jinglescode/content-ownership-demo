@@ -21,11 +21,14 @@ type Body = {
   contentNumber: number; // index of content in api `get-content`'s data
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
   // API 4: PUT /api/transfer-content
   // Transfer content
   try {
-    if (req.method === "POST") {
+    if (req.method === "PUT") {
       const {
         feeUtxo,
         ownerTokenUtxo,
