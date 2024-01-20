@@ -8,41 +8,35 @@ import { useDispatch, useSelector } from "react-redux";
 
 function AssetHexList({callback}:{callback:VoidFunction}) {
   const { wallet, connected } = useWallet();
-  const [assest, setAssest] = useState<AssetExtended[]>();
+  const [asset, setAsset] = useState<AssetExtended[]>();
   const dispatch: AppDispatch = useDispatch();
   const assestHex = useSelector((state: RootReducer) => state.asset);
+  const assetList = useSelector((state: RootReducer) => state.assetsList);
+  
   const [selected, setSelected] = useState<boolean>(false)
   useEffect(() => {
-    if (connected) {
-      wallet
-        .getAssets()
-        .then((assets) => {
-          setAssest(assets);
-        })
-        
-          
-        
-    }
+    setAsset(assetList[0]);
+   
   }, [connected]);
 
   return (
     connected &&
-    assest && !selected && (
+    asset && !selected && (
       <>
-        {assest.map((assest) => (
+        {asset.map((asset) => (
           <button
-            key={assest.unit}
+            key={asset.unit}
             className=" text-black py-1  text-start"
             onClick={() => {
               /**Set the assest Hex to reducer */
               assestHex.length > 0
-                ? dispatch(updateAsset(assest))
-                : dispatch(addAsset(assest));
+                ? dispatch(updateAsset(asset))
+                : dispatch(addAsset(asset));
                 setSelected(true);
                 callback();
             }}
           >
-            {assest.unit}
+            {asset.unit}
           </button>
         ))}
       </>
