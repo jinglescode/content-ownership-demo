@@ -1,15 +1,25 @@
 import React from "react";
+import { Content } from "../../../types";
+import Link from "next/link";
 
-
-function PostCard({ contentHashHex,content,index }: { contentHashHex: string ,content:Content,index:number}) {
-  
+function PostCard({
+  ownerAssetHex,
+  content,
+  index,
+}: {
+  ownerAssetHex: string;
+  content: Content;
+  index: number;
+}) {
   return (
-    <div className="container flex flex-col bg-blue-500">
-      <div>image</div>
-      <div>Post index:{index}</div>
-      <div>Description:{content.description}</div>
-      <div>Author:{contentHashHex}</div>
-    </div>
+    <Link href="/ContentDetail/page">
+      <div className="container flex flex-col bg-blue-500">
+        <div>image</div>
+        <div>Content Number:{index}</div>
+        <div>Description:{content.description}</div>
+        <div>Author:{ownerAssetHex}</div>
+      </div>
+    </Link>
   );
 }
 

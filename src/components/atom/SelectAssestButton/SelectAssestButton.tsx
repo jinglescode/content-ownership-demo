@@ -15,29 +15,21 @@ function SelectAssestButton() {
   const dispatch: AppDispatch = useDispatch();
   const asset = useSelector((state: RootReducer) => state.asset);
   const [selected, setSelected] = useState<boolean>(false);
- 
+
   useEffect(() => {
-    if(asset.length>0){
-      setSelected(true)
+    if (asset.length > 0) {
+      setSelected(true);
     }
-  
-    
-  }, [asset])
-  
-
-  
-
-  
+  }, [asset]);
 
   const assestHandler = () => {
-    
     setSelected(true);
-    
+
     setGetAssets((prev) => !prev);
   };
   return (
     <div>
-      {selected &&<div className="text-black">Selected: {asset[0].unit}</div>}
+      {selected && <div className="text-black">Selected: {asset[0].unit}</div>}
       <button
         id="dropdownDefaultButton"
         data-dropdown-toggle="dropdown"
@@ -45,8 +37,6 @@ function SelectAssestButton() {
         type="button"
         onClick={() => {
           setGetAssets((prev) => !prev);
-          
-          
         }}
       >
         Select your Assest{" "}

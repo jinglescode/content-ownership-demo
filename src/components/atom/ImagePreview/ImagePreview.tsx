@@ -1,6 +1,6 @@
 import Image from "next/image";
 import React from "react";
-import cross from "./cross.png"
+import cross from "./cross.png";
 
 function ImagePreview({
   url,
@@ -21,7 +21,7 @@ function ImagePreview({
         />
         <div className=" absolute top-0 right-2 ">
           <button className="mt-2" onClick={removeCallBack}>
-            <Image src={cross} alt="crossButtonImage" height={20} width={20}/>
+            <Image src={cross} alt="crossButtonImage" height={20} width={20} />
           </button>
         </div>
       </div>

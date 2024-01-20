@@ -6,7 +6,7 @@ import ConnectButton from "../ConnectButton/ConnectButton";
 
 function SignInButton() {
   const [getWallet, setGetWallet] = useState(false);
-  const wallet = useSelector((state: RootReducer) => state.wallet);
+
   return (
     <div>
       <button

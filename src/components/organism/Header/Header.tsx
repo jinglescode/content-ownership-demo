@@ -23,7 +23,7 @@ function Header() {
         <Link href="/">
           <Icon />
         </Link>
-        
+
         <div className=" md:inline-flex  items-center space-x-5 hidden">
           <h3 className="text-black">About </h3>
           <h3 className="text-black">Contact</h3>
@@ -43,9 +43,9 @@ function Header() {
           </>
         ) : (
           <div className=" max-w-7xl mx-auto flex place-items-start">
-            <CreateContentButton/>
+            <CreateContentButton />
             <SignOutButton />
-            <UserIcon/>
+            <UserIcon />
           </div>
         )}
       </div>

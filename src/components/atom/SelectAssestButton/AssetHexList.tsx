@@ -6,22 +6,22 @@ import { useWallet } from "@meshsdk/react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-function AssetHexList({callback}:{callback:VoidFunction}) {
+function AssetHexList({ callback }: { callback: VoidFunction }) {
   const { wallet, connected } = useWallet();
   const [asset, setAsset] = useState<AssetExtended[]>();
   const dispatch: AppDispatch = useDispatch();
   const assestHex = useSelector((state: RootReducer) => state.asset);
   const assetList = useSelector((state: RootReducer) => state.assetsList);
-  
-  const [selected, setSelected] = useState<boolean>(false)
+
+  const [selected, setSelected] = useState<boolean>(false);
   useEffect(() => {
     setAsset(assetList[0]);
-   
   }, [connected]);
 
   return (
     connected &&
-    asset && !selected && (
+    asset &&
+    !selected && (
       <>
         {asset.map((asset) => (
           <button
@@ -32,8 +32,8 @@ function AssetHexList({callback}:{callback:VoidFunction}) {
               assestHex.length > 0
                 ? dispatch(updateAsset(asset))
                 : dispatch(addAsset(asset));
-                setSelected(true);
-                callback();
+              setSelected(true);
+              callback();
             }}
           >
             {asset.unit}

@@ -22,7 +22,6 @@ function SelectAssetButton() {
 
   const assetHandler = () => {
     setSelected(true);
-
     setGetAssets((prev) => !prev);
   };
   return (
@@ -37,7 +36,7 @@ function SelectAssetButton() {
           setGetAssets((prev) => !prev);
         }}
       >
-        Select your Assest{" "}
+        Select your Asset{" "}
         <svg
           className="w-2.5 h-2.5 ms-3"
           aria-hidden="true"

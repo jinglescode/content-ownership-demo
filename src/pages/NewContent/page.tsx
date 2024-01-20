@@ -121,6 +121,7 @@ function Page(): React.JSX.Element {
       const signedTx = await wallet.signTx(rawTx, true);
       const txHash = await wallet.submitTx(signedTx);
       console.log("txHash", txHash);
+      alert("submit success");
     } catch (error) {
       console.log(error);
     }

@@ -3,8 +3,7 @@ import axios from "axios";
 
 import PostCard from "@/components/atom/PostCard/PostCard";
 import { useWallet } from "@meshsdk/react";
-
-
+import { Post } from "@/types";
 
 function PostTable() {
   const [data, setData] = useState<Array<any>>([]);
@@ -12,7 +11,6 @@ function PostTable() {
   const fetchingData = async () => {
     const res = await axios.get("../api/get-content");
     setData(res.data);
-    console.log(res.data);
   };
 
   useEffect(() => {
@@ -22,13 +20,12 @@ function PostTable() {
   return (
     <div className="container">
       <div className="grid grid-cols-3 gap-4">
-        
-        {data.map((data:Post,index) => (
+        {data.map((data: Post, index) => (
           <PostCard
-          key={index}
-          index={index}
+            key={index}
+            index={index}
             content={data.content}
-            contentHashHex={data.contentHashHex}
+            ownerAssetHex={data.ownerAssetHex}
           />
         ))}
       </div>
