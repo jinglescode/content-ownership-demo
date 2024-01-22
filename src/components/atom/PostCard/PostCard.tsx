@@ -12,7 +12,7 @@ function PostCard({
   index: number;
 }) {
   return (
-    <Link href="/ContentDetail/page">
+    <Link href={"/contentDetail/" + index}>
       <div className="container flex flex-col bg-blue-500">
         <div>image</div>
         <div>Content Number:{index}</div>
