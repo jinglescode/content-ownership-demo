@@ -14,8 +14,7 @@ import NewContentHeader from "@/components/organism/NewContentHeader/NewContentH
 import { Upload } from "lucide-react";
 import { useWallet } from "@meshsdk/react";
 import axios from "axios";
-import type { Body } from "../api/create-content";
-import { UTxO } from "@meshsdk/core";
+
 import { useSelector } from "react-redux";
 import { RootReducer } from "@/redux/rootReducer";
 
@@ -184,6 +183,3 @@ function Page(): React.JSX.Element {
 }
 
 export default Page;
-function aysnc() {
-  throw new Error("Function not implemented.");
-}

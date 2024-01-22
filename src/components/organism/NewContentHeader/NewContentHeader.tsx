@@ -21,7 +21,7 @@ export default function NewContentHeader({
             <Icon />
           </Link>
 
-          <p>New Content</p>
+          <p>{title}</p>
         </div>
         <button
           className="bg-black rounded-lg p-1 cursor-pointer"
