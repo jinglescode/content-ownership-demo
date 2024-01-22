@@ -4,6 +4,7 @@ import { useWallet } from "@meshsdk/react";
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import { Post } from "@/types";
 
 type Body = {
   feeUtxo: UTxO;
@@ -65,7 +66,7 @@ let body: Body = {
 
 function TransferContentButton() {
   const [newOwnerAssetHex, setNewOwnerAssetHex] = useState<string>("");
-  const [contentNumber, setContentNumber] = useState<number>();
+  const [contentNumber, setContentNumber] = useState<number>(-1);
   const feeUtxo = useSelector((state: RootReducer) => state.feeUtxo);
   const collateralUtxo = useSelector(
     (state: RootReducer) => state.collateralUtxo
@@ -73,12 +74,20 @@ function TransferContentButton() {
   const walletAddress = useSelector(
     (state: RootReducer) => state.walletAddress
   );
+  const contentData = useSelector((state: RootReducer) => state.getContentData);
 
   const { wallet } = useWallet();
 
   const transferButtonHandler = async () => {
     //get the content by Number first
-    const content = await axios.get("/api/get-content/0-" + contentNumber);
+    //get from redux or api
+    let data: Post;
+    if (contentData[0] && contentNumber) {
+      data = contentData[0][contentNumber];
+    } else {
+      const res = await axios.get("../api/get-content/0-" + contentNumber);
+      data = res.data;
+    }
 
     const utxoList = await wallet.getUtxos();
 
@@ -86,13 +95,14 @@ function TransferContentButton() {
     if (
       utxoList.some((uxto: UTxO) => {
         return uxto.output.amount.some((amount) => {
-          return amount.unit === content.data.ownerAssetHex;
+          return amount.unit === data.ownerAssetHex;
         });
-      })
+      }) &&
+      contentNumber
     ) {
       body.ownerTokenUtxo = utxoList.find((utxo: UTxO) => {
         return utxo.output.amount.some((amount) => {
-          return amount.unit === content.data.ownerAssetHex;
+          return amount.unit === data.ownerAssetHex;
         });
       });
     } else {
@@ -129,7 +139,7 @@ function TransferContentButton() {
       <input
         className=" outline-none h-10 text-2xl  font-bold border-none w-full text-black"
         placeholder="Content Number:"
-        value={contentNumber}
+        value={contentNumber === -1 ? "" : contentNumber}
         onChange={(event) => {
           if (/^\d*$/.test(event.target.value)) {
             // Update state only if it's a valid number
