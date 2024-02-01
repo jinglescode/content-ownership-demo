@@ -6,6 +6,7 @@ import { TransferContent, UpdateContent, UserAction } from "@/transactions/user"
 import { mConStr0 } from "@sidan-lab/sidan-csl";
 import multihashes from "multihashes";
 import { toPlutusData } from "../aiken";
+import { useEffect, useState } from "react";
 
 const infura = new InfuraProvider(
   process.env.NEXT_PUBLIC_INFURA_PROJECT_ID!,
@@ -21,7 +22,57 @@ const skey = process.env.NEXT_PUBLIC_SKEY!;
 // 2. Retrieve content from blockchain, resolve back to content stored in IPFS
 
 export default function Admin() {
+  const [isWalletSynced, setIsWalletSynced] = useState(true);
+  const [txHash, setTxHash] = useState<string>("");
+  const mesh = new MeshTxBuilder({
+    fetcher: maestro,
+    submitter: maestro,
+    evaluator: maestro,
+  });
+
   const { connect, connected, wallet } = useWallet();
+  const [txParams, setTxParams] = useState<[MeshTxBuilder, IFetcher, TxConstants]>([
+    mesh,
+    maestro,
+    {
+      walletAddress,
+      skey,
+      collateralUTxO: {
+        input: {
+          txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
+          outputIndex: 7,
+        },
+        output: {
+          amount: [{ unit: "lovelace", quantity: "10000000" }],
+          address: "addr_test1vpw22xesfv0hnkfw4k5vtrz386tfgkxu6f7wfadug7prl7s6gt89x",
+        },
+      },
+    },
+  ]);
+
+  useEffect(() => {
+    if (wallet && connected) {
+      setIsWalletSynced(false);
+      wallet.getUsedAddresses().then((addresses) => {
+        wallet.getCollateral().then((collateral) => {
+          setTxParams((prev) => {
+            return [
+              prev[0],
+              prev[1],
+              {
+                walletAddress: addresses[0],
+                skey,
+                collateralUTxO: collateral[0],
+              },
+            ];
+          });
+          setIsWalletSynced(true);
+        });
+      });
+    } else if (wallet && !connected) {
+      connect("eternl");
+    }
+  }, [wallet]);
 
   async function uploadMarkdown() {
     const content = { title: "Hello World", content: "Hello World\n\nThis is my first post!" };
@@ -85,31 +136,6 @@ export default function Admin() {
       return Number(assetAmount) >= 1;
     });
   };
-
-  const mesh = new MeshTxBuilder({
-    fetcher: maestro,
-    submitter: maestro,
-    evaluator: maestro,
-  });
-
-  const txParams: [MeshTxBuilder, IFetcher, TxConstants] = [
-    mesh,
-    maestro,
-    {
-      walletAddress,
-      skey,
-      collateralUTxO: {
-        input: {
-          txHash: "3fbdf2b0b4213855dd9b87f7c94a50cf352ba6edfdded85ecb22cf9ceb75f814",
-          outputIndex: 7,
-        },
-        output: {
-          amount: [{ unit: "lovelace", quantity: "10000000" }],
-          address: "addr_test1vpw22xesfv0hnkfw4k5vtrz386tfgkxu6f7wfadug7prl7s6gt89x",
-        },
-      },
-    },
-  ];
 
   const setup = new ScriptsSetup(...txParams);
   const admin = new AdminAction(...txParams);
@@ -187,64 +213,71 @@ export default function Admin() {
     console.log("TxHash", confirmTxHash);
   };
 
+  // const longestTokenNamePossible =
+  // "5066154a102ee037390c5236f78db23239b49c5748d3d349f3ccf04b3132333435363738393031323334353637383930313233343536373839303132";
+
   const createContent = async (contentHex = "ff942613ef86667df9e8f2488f29615fc9aaad7906e266f686153d5b7c81abe0") => {
-    const utxo = await getUtxosWithMinLovelace(20000000);
-    const txHash = await user.createContent(
+    const utxos = await wallet.getUtxos();
+    const utxo = await getUtxosWithMinLovelace(20000000, utxos);
+    const txHex = await user.createContent(
       utxo[0],
-      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      // longestTokenNamePossible,
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374696e67646973636f756e742e616461",
       contentHex,
-      0
+      4
     );
+    const signedTx = await wallet.signTx(txHex, true);
+    const txHash = await wallet.submitTx(signedTx);
+    setTxHash(txHash);
     console.log("TxHash", txHash);
   };
 
-  const updateContent = async () => {
+  const contentNumber = 15;
+
+  const updateContent = async (contentHex = "ff942613ef86667df9e8f2488f29615fc9aaad7906e266f686153d5b7c81abe0") => {
     const allUtxos = await wallet.getUtxos();
-    const collateralUtxo = await wallet.getCollateral();
-    const usedAddresses = await wallet.getUsedAddresses();
-    const unusedAddress = await wallet.getUnusedAddresses();
     const utxo = await getUtxosWithMinLovelace(20000000, allUtxos);
     const ownerTokenUtxo = await getUtxosWithToken(
-      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374696e67646973636f756e742e616461",
       allUtxos
     );
     const updateContentParams: UpdateContent = {
       feeUtxo: utxo[0],
       ownerTokenUtxo: ownerTokenUtxo[0],
-      walletAddress: [...usedAddresses, ...unusedAddress][0],
-      registryNumber: 0,
-      newContentHashHex: "aaaabbbb",
-      contentNumber: 0,
+      walletAddress: txParams[2].walletAddress,
+      registryNumber: 4,
+      newContentHashHex: contentHex,
+      contentNumber,
     };
     console.log(`Update Content Params`, updateContentParams);
 
     const txBody = await user.updateContent(updateContentParams);
     const signedTx = await wallet.signTx(txBody, true);
     const confirmTxHash = await maestro.submitTx(signedTx);
+    setTxHash(confirmTxHash);
     console.log("TxHash", confirmTxHash);
   };
 
   const transferContent = async () => {
     const allUtxos = await wallet.getUtxos();
-    const collateralUtxo = await wallet.getCollateral();
-    const usedAddresses = await wallet.getUsedAddresses();
-    const unusedAddress = await wallet.getUnusedAddresses();
     const utxo = await getUtxosWithMinLovelace(20000000, allUtxos);
     const ownerTokenUtxo = await getUtxosWithToken(
-      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374322e616461",
+      "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374696e67646973636f756e742e616461",
       allUtxos
     );
     const updateContentParams: TransferContent = {
       feeUtxo: utxo[0],
       ownerTokenUtxo: ownerTokenUtxo[0],
-      walletAddress: [...usedAddresses, ...unusedAddress][0],
-      registryNumber: 0,
-      newOwnerAssetHex: "fc0e0323b254c0eb7275349d1e32eb6cc7ecfd03f3b71408eb46d75168696e736f6e2e616461",
-      contentNumber: 0,
+      walletAddress: txParams[2].walletAddress,
+      registryNumber: 4,
+      newOwnerAssetHex:
+        "baefdc6c5b191be372a794cd8d40d839ec0dbdd3c28957267dc8170074657374696e67646973636f756e742e616461",
+      contentNumber,
     };
     const txBody = await user.transferContent(updateContentParams);
     const signedTx = await wallet.signTx(txBody, true);
     const confirmTxHash = await maestro.submitTx(signedTx);
+    setTxHash(confirmTxHash);
     console.log("TxHash", confirmTxHash);
   };
 
@@ -273,16 +306,24 @@ export default function Admin() {
       <button className="m-2 p-2 bg-slate-500" onClick={() => createOwnershipRegistry()}>
         Create Ownership Registry
       </button>
-      <button className="m-2 p-2 bg-blue-500" onClick={() => createContent()}>
+      <button
+        className={isWalletSynced ? "m-2 p-2 bg-blue-500" : "m-2 p-2 bg-blue-200"}
+        onClick={() => createContent()}>
         Create Content
       </button>
-      <button className="m-2 p-2 bg-blue-500" onClick={() => updateContent()}>
+      <button
+        className={isWalletSynced ? "m-2 p-2 bg-blue-500" : "m-2 p-2 bg-blue-200"}
+        onClick={() => updateContent()}>
         Update Content
       </button>
-      <button className="m-2 p-2 bg-blue-500" onClick={() => transferContent()}>
+      <button
+        className={isWalletSynced ? "m-2 p-2 bg-blue-500" : "m-2 p-2 bg-blue-200"}
+        onClick={() => transferContent()}>
         Transfer Content
       </button>
-      <button className="m-2 p-2 bg-blue-500" onClick={() => uploadMarkdown()}>
+      <button
+        className={isWalletSynced ? "m-2 p-2 bg-blue-500" : "m-2 p-2 bg-blue-200"}
+        onClick={() => uploadMarkdown()}>
         Test: Upload MD
       </button>
       <button className="m-2 p-2 bg-red-400" onClick={() => stopContentRegistry()}>
@@ -297,6 +338,7 @@ export default function Admin() {
       <button className="m-2 p-2 bg-slate-500" onClick={() => queryUtxos()}>
         Test
       </button>
+      <p className="text-blue-500">https://preprod.cardanoscan.io/transaction/{txHash}</p>
     </main>
   );
 }
