@@ -19,14 +19,9 @@ function PostTable() {
 
   return (
     <div className="container">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 m-4">
         {data.map((data: Post, index) => (
-          <PostCard
-            key={index}
-            index={index}
-            content={data.content}
-            ownerAssetHex={data.ownerAssetHex}
-          />
+          <PostCard key={index} index={index} content={data.content} ownerAssetHex={data.ownerAssetHex} />
         ))}
       </div>
     </div>
