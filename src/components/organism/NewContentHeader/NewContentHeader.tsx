@@ -14,21 +14,19 @@ export default function NewContentHeader({
   callback: () => Promise<void>;
 }) {
   return (
-    <div className="border-b">
+    <div className="border-b p-4">
       <div className="container flex justify-between items-center p-1.5">
         <div className="flex space-x-2 text-black items-center">
           <Link href="/">
             <Icon />
           </Link>
-
           <p>{title}</p>
         </div>
         <button
-          className="bg-black rounded-lg p-1 cursor-pointer"
+          className="bg-emerald-500 rounded-lg cursor-pointer text-white p-3"
           disabled={loading}
-          onClick={callback}
-        >
-          {loading ? "Saving.." : "Save"}
+          onClick={callback}>
+          {loading ? "Creating..." : "Create Content"}
         </button>
       </div>
     </div>

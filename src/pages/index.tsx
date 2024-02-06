@@ -5,16 +5,14 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 
 import { AppDispatch } from "@/redux/store";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { RootReducer } from "@/redux/rootReducer";
 import PostTable from "@/components/organism/PostTable/PostTable";
-import axios from "axios";
 import TransferContentButton from "@/components/organism/TransferContentButton/TransferContentButton";
 import { addWalletAddress, updateWalletAddress } from "@/redux/actions/walletAddress";
 import { addFeeUtxo, updateFeeUtxo } from "@/redux/actions/feeUtxo";
 import { addCollateralUtxo, updateCollateralUtxo } from "@/redux/actions/collateralUtxo";
-import { addGetContentData, updateGetContentData } from "@/redux/actions/getContentData";
 import { addAssetsList, updateAssetsList } from "@/redux/actions/assetsList";
 
 export default function Home() {
@@ -24,7 +22,6 @@ export default function Home() {
   const feeUtxo = useSelector((state: RootReducer) => state.feeUtxo);
   const collateralUtxo = useSelector((state: RootReducer) => state.collateralUtxo);
   const assetsList = useSelector((state: RootReducer) => state.assetsList);
-  const getContentData = useSelector((state: RootReducer) => state.getContentData);
 
   const savingWalletData = async () => {
     try {
@@ -53,9 +50,9 @@ export default function Home() {
     } catch (error) {}
   };
 
-  //TODO:change it into loading , trigger once only
   useEffect(() => {
     savingWalletData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected]);
 
   return (

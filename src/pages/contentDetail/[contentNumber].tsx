@@ -2,7 +2,6 @@ import ImagePreview from "@/components/atom/ImagePreview/ImagePreview";
 import NewContentHeader from "@/components/organism/NewContentHeader/NewContentHeader";
 import { Upload } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import Tiptap from "../NewContent/TipTap";
 import { Editor, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -88,12 +87,8 @@ function Page(): React.JSX.Element {
   const { connected, wallet } = useWallet();
   const contentData = useSelector((state: RootReducer) => state.getContentData);
   const feeUtxo = useSelector((state: RootReducer) => state.feeUtxo);
-  const collateralUtxo = useSelector(
-    (state: RootReducer) => state.collateralUtxo
-  );
-  const walletAddress = useSelector(
-    (state: RootReducer) => state.walletAddress
-  );
+  const collateralUtxo = useSelector((state: RootReducer) => state.collateralUtxo);
+  const walletAddress = useSelector((state: RootReducer) => state.walletAddress);
   const addImageHandler = () => {
     imgRef.current?.click();
   };
@@ -116,7 +111,7 @@ function Page(): React.JSX.Element {
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: "Write something …",
+        placeholder: "Write something ...",
       }),
       //   CodeBlockLowlight.configure({
       //     lowlight,
@@ -211,16 +206,10 @@ function Page(): React.JSX.Element {
 
   return (
     <div>
-      <NewContentHeader
-        title={title}
-        loading={loading}
-        callback={editHandler}
-      />
+      <NewContentHeader title={title} loading={loading} callback={editHandler} />
       <div className="container">
         {/**Adding Image */}
-        {imageUrl && (
-          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
-        )}
+        {imageUrl && <ImagePreview url={imageUrl} removeCallBack={removeImage} />}
         <div className="mt-4">
           <input
             type="file"
@@ -229,10 +218,7 @@ function Page(): React.JSX.Element {
             accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
             onChange={imageHandler}
           />
-          <Upload
-            className="cursor-pointer bg-black"
-            onClick={addImageHandler}
-          />
+          <Upload className="cursor-pointer bg-black" onClick={addImageHandler} />
         </div>
         {/**Title Input */}
         <div className="mt-4">
@@ -257,9 +243,9 @@ function Page(): React.JSX.Element {
           />
         </div>
         {/** Rich Text Editor */}
-        <div className="mt-4 text-black">
+        {/* <div className="mt-4 text-black">
           <Tiptap editor={editor} />
-        </div>
+        </div> */}
       </div>
     </div>
   );

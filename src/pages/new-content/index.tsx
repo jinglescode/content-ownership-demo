@@ -21,41 +21,15 @@ import { RootReducer } from "@/redux/rootReducer";
 function Page(): React.JSX.Element {
   const { wallet, connected } = useWallet();
   const assetHex = useSelector((state: RootReducer) => state.asset);
-  const walletAddress = useSelector(
-    (state: RootReducer) => state.walletAddress
-  );
+  const walletAddress = useSelector((state: RootReducer) => state.walletAddress);
   const feeUtxo = useSelector((state: RootReducer) => state.feeUtxo);
-  const collateralUtxo = useSelector(
-    (state: RootReducer) => state.collateralUtxo
-  );
+  const collateralUtxo = useSelector((state: RootReducer) => state.collateralUtxo);
   // Variable initialization
 
   let ownerAssetHex: String;
   let registryNumber: Number;
 
   const [loading, setLoading] = useState<boolean>(false);
-  /**Add Image */
-  const imgRef = useRef<HTMLInputElement | null>(null);
-  const [image, setImage] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-  const addImageHandler = () => {
-    imgRef.current?.click();
-  };
-  const imageHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImage(file);
-      const imgURL = URL.createObjectURL(file);
-      setImageUrl(imgURL);
-    }
-  };
-
-  /**Remove Image */
-  const removeImage = () => {
-    setImage(null);
-    setImageUrl(null);
-  };
 
   /**Title */
   const [title, setTitle] = useState<string>("");
@@ -68,7 +42,7 @@ function Page(): React.JSX.Element {
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: "Write something …",
+        placeholder: "Write something ...",
       }),
       //   CodeBlockLowlight.configure({
       //     lowlight,
@@ -90,7 +64,6 @@ function Page(): React.JSX.Element {
       title: title,
       description: description,
       content: htmlContent,
-      image: image,
     };
 
     try {
@@ -128,29 +101,8 @@ function Page(): React.JSX.Element {
 
   return (
     <div>
-      <NewContentHeader
-        title={title}
-        loading={loading}
-        callback={submitHandler}
-      />
-      <div className="container">
-        {/**Adding Image */}
-        {imageUrl && (
-          <ImagePreview url={imageUrl} removeCallBack={removeImage} />
-        )}
-        <div className="mt-4">
-          <input
-            type="file"
-            className="hidden"
-            ref={imgRef}
-            accept="image/png , image/jpeg , image/svg , image/gif , image/jpg , image/webp"
-            onChange={imageHandler}
-          />
-          <Upload
-            className="cursor-pointer bg-black"
-            onClick={addImageHandler}
-          />
-        </div>
+      <NewContentHeader title={title} loading={loading} callback={submitHandler} />
+      <div className="container p-10">
         {/**Title Input */}
         <div className="mt-4">
           <input
@@ -174,9 +126,9 @@ function Page(): React.JSX.Element {
           />
         </div>
         {/** Rich Text Editor */}
-        <div className="mt-4 text-black">
+        {/* <div className="mt-4 text-black">
           <Tiptap editor={editor} />
-        </div>
+        </div> */}
       </div>
     </div>
   );
